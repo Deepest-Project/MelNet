@@ -10,6 +10,7 @@ import traceback
 from model.model import MelNet
 from .utils import get_commit_hash
 from .audio import MelGen
+from .tierutil import TierUtil
 
 
 def train(args, pt_dir, chkpt_path, trainloader, testloader, writer, logger, hp, hp_str):
@@ -56,8 +57,8 @@ def train(args, pt_dir, chkpt_path, trainloader, testloader, writer, logger, hp,
                 audio = audio.cuda()
                 mel = melgen.get_logmel(audio)
 
-                # TODO: fix this
-                mu, std, pi = model(mel)
+                for tier in range(1, hp.model.tier+1):
+
 
                 optimizer.zero_grad()
                 loss.backward()

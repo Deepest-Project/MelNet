@@ -1,13 +1,16 @@
 import numpy as np
 import subprocess
 import torch.nn.functional as F
+from scipy.io.wavfile import read
 
 
 def get_commit_hash():
 	message = subprocess.check_output(["git", "rev-parse", "--short", "HEAD"])
 	return message.strip().decode('utf-8')
 
-def wav_formatter(wav):
+def read_wav_np(wavpath):
+    sr, wav = read(wavpath)
+    
     if len(wav.shape) == 2:
         wav = wav[:, 0]
     

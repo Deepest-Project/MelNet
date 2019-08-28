@@ -29,15 +29,17 @@ class DelayedRNN(nn.Module):
     def forward(self, input_h_t, input_h_f, input_h_c):
         # time-delayed stack 
         h_t_x = torch.zeros(input_h_t.shape)
-        for i in range(input_h_t.shape[2]):
+
+        for i in range(input_h_t.shape[2]): # line by line. TODO: parallelize
             h_t_x_slice, _ = self.t_delay_RNN_x(input_h_t[:, :, i, :])
             h_t_x[:, :, i, :] = h_t_x_slice
 
         h_t_y = torch.zeros(input_h_t.shape)
         h_t_z = torch.zeros(input_h_t.shape)
-        for i in range(input_h_t.shape[1]):
+        for i in range(input_h_t.shape[1]): # line by line. TODO: parallelize
             h_t_y_slice, _ = self.t_delay_RNN_y(input_h_t[:, i, :, :])
             h_t_z_slice, _ = self.t_delay_RNN_z(input_h_t.flip(2)[:, i, :, :])
+            # TODO: can use bidirectional=True
             h_t_y[:, i, :, :] = h_t_y_slice
             h_t_z[:, i, :, :] = h_t_z_slice.flip(1)
 

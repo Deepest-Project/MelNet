@@ -4,6 +4,10 @@ model:
   hidden: 512
   gmm: 10
 ---
+data:
+  train: ''
+  test: ''
+---
 audio:
   sr: 16000
   duration: 6.0
