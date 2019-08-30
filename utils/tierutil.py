@@ -29,9 +29,8 @@ class TierUtil():
             % (self.t_div, T)
 
         tiers = list()
-        tiers.append(x) # final objective
-        for i in range(self.hp.model.tier - 1, 1, -1):
-            if i % 2 == 0:
+        for i in range(self.hp.model.tier - 1):
+            if i % 2 == 0: # partition the row first
                 tiers.append(x[:, 1::2, :])
                 x = x[:, ::2, :]
             else:
