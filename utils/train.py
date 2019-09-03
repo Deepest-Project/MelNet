@@ -8,10 +8,10 @@ import itertools
 import traceback
 
 from model.model import MelNet
+from model.loss import GMMLoss
 from .utils import get_commit_hash
 from .audio import MelGen
 from .tierutil import TierUtil
-from .loss import GMMLoss
 
 
 def train(args, pt_dir, chkpt_path, trainloader, testloader, writer, logger, hp, hp_str):

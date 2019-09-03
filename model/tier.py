@@ -18,7 +18,7 @@ class Tier(nn.Module):
         self.W_c_0 = nn.Linear(freq, num_hidden)
 
         self.layers = nn.ModuleList([
-            DelayedRNN(num_hidden) for _ in range(layers)
+            DelayedRNN(hp) for _ in range(layers)
         ])
 
         # Gaussian Mixture Model: eq. (2)
