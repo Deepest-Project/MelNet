@@ -41,7 +41,7 @@ class DelayedRNN(nn.Module):
 
         # Fig. 2(a)-2,3 can be parallelized by viewing each vertical line as batch,
         # using bi-directional version of GRU
-        temp = input_h_t.transpose(1, 2) # [B, T, M, D]
+        temp = input_h_t.transpose(1, 2).contiguous() # [B, T, M, D]
         temp = temp.view(-1, M, D)
         h_t_yz, _ = self.t_delay_RNN_yz(temp)
         h_t_yz = h_t_yz.view(B, T, M, 2*D)
@@ -59,7 +59,7 @@ class DelayedRNN(nn.Module):
         ####### frequency-delayed stack #######
         h_c_expanded = output_h_c.unsqueeze(1).repeat(1, self.freq, 1, 1)
         h_f_sum = input_h_f + output_h_t + h_c_expanded
-        h_f_sum = h_f_sum.transpose(1, 2) # [B, T, M, D]
+        h_f_sum = h_f_sum.transpose(1, 2).contiguous() # [B, T, M, D]
         h_f_sum = h_f_sum.view(-1, M, D)
 
         h_f_temp, _ = self.f_delay_RNN(h_f_sum)
