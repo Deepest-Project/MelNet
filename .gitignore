@@ -1,5 +1,9 @@
 .idea/
 
+# configuration
+config/*
+!config/voxceleb2.yaml
+
 # logs, checkpoints
 chkpt/
 logs/
