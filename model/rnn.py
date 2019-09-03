@@ -9,6 +9,7 @@ class DelayedRNN(nn.Module):
     def __init__(self, hp, tierN):
         super(DelayedRNN, self).__init__()
         self.num_hidden = hp.model.hidden
+        self.tierN = tierN
 
         self.freq = hp.audio.n_mels * f_div[tierN] // f_div[hp.model.tier]
 
@@ -16,8 +17,11 @@ class DelayedRNN(nn.Module):
             input_size=self.num_hidden, hidden_size=self.num_hidden, batch_first=True)
         self.t_delay_RNN_yz = nn.GRU(
             input_size=self.num_hidden, hidden_size=self.num_hidden, batch_first=True, bidirectional=True)
-        self.c_RNN = nn.GRU(
-            input_size=self.num_hidden, hidden_size=self.num_hidden, batch_first=True)
+
+        # use central stack only at initial tier
+        if tierN == 1:
+            self.c_RNN = nn.GRU(
+                input_size=self.num_hidden, hidden_size=self.num_hidden, batch_first=True)
         self.f_delay_RNN = nn.GRU(
             input_size=self.num_hidden, hidden_size=self.num_hidden, batch_first=True)
 
@@ -25,10 +29,10 @@ class DelayedRNN(nn.Module):
         self.W_c = nn.Linear(self.num_hidden, self.num_hidden)
         self.W_f = nn.Linear(self.num_hidden, self.num_hidden)
 
-    def forward(self, input_h_t, input_h_f, input_h_c):
+    def forward(self, input_h_t, input_h_f, input_h_c=0.0):
+        # input_h_t, input_h_f: [B, M, T, D]
+        # input_h_c: [B, T, D]
         B, M, T, D = input_h_t.size()
-        Bc, Tc, Dc = input_h_c.size()
-        assert B == Bc and T == Tc and D == Dc, 'shape mismatch'
 
         ####### time-delayed stack #######
         # Fig. 2(a)-1 can be parallelized by viewing each horizontal line as batch
@@ -47,8 +51,10 @@ class DelayedRNN(nn.Module):
         output_h_t = input_h_t + self.W_t(h_t_concat) # residual connection, eq. (6)
 
         ####### centralized stack #######
-        h_c_temp, _ = self.c_RNN(input_h_c)
-        output_h_c = input_h_c + self.W_c(h_c_temp) # residual connection, eq. (11)
+        output_h_c = 0.0
+        if self.tierN == 1:
+            h_c_temp, _ = self.c_RNN(input_h_c)
+            output_h_c = output_h_c + self.W_c(h_c_temp) # residual connection, eq. (11)
 
         ####### frequency-delayed stack #######
         h_c_expanded = output_h_c.unsqueeze(1).repeat(1, self.freq, 1, 1)
