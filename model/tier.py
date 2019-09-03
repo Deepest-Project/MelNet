@@ -7,18 +7,18 @@ from .rnn import DelayedRNN
 
 
 class Tier(nn.Module):
-    def __init__(self, hp, freq, layers, first=False):
+    def __init__(self, hp, freq, layers, tierN):
         super(Tier, self).__init__()
         num_hidden = hp.model.hidden
         self.hp = hp
-        self.first = first
+        self.tierN = tierN
 
         self.W_t_0 = nn.Linear(1, num_hidden)
         self.W_f_0 = nn.Linear(1, num_hidden)
         self.W_c_0 = nn.Linear(freq, num_hidden)
 
         self.layers = nn.ModuleList([
-            DelayedRNN(hp) for _ in range(layers)
+            DelayedRNN(hp, tierN) for _ in range(layers)
         ])
 
         # Gaussian Mixture Model: eq. (2)
@@ -29,14 +29,14 @@ class Tier(nn.Module):
         self.W_theta = nn.Linear(num_hidden, 3*self.K)
 
     def forward(self, x):
-        if self.first:
+        if self.tierN == 1:
             h_t = self.W_t_0(F.pad(x, [0, 0, -1, 1, 0, 0]).unsqueeze(-1))
             h_f = self.W_f_0(F.pad(x, [0, 0, 0, 0, -1, 1]).unsqueeze(-1))
-            h_c = self.W_c_0(F.pad(x, [0, 0, -1, 1, 0, 0]))
+            h_c = self.W_c_0(F.pad(x, [0, 0, -1, 1, 0, 0]).transpose(1, 2))
         else:
             h_t = self.W_t_0(x.unsqueeze(-1))
             h_f = self.W_f_0(x.unsqueeze(-1))
-            h_c = self.W_c_0(x)
+            h_c = self.W_c_0(x.transpose(1, 2))
 
 
         for layer in self.layers:

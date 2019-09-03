@@ -2,14 +2,15 @@ import torch
 import torch.nn as nn
 import torch.nn.functional as F
 
+from utils.constant import f_div
+
 
 class DelayedRNN(nn.Module):
-    def __init__(self, hp):
+    def __init__(self, hp, tierN):
         super(DelayedRNN, self).__init__()
         self.num_hidden = hp.model.hidden
 
-        # TODO: fix this hard-coded value
-        self.freq = 32
+        self.freq = hp.audio.n_mels * f_div[tierN] // f_div[hp.model.tier]
 
         self.t_delay_RNN_x = nn.GRU(
             input_size=self.num_hidden, hidden_size=self.num_hidden, batch_first=True)
@@ -28,14 +29,14 @@ class DelayedRNN(nn.Module):
 
     def forward(self, input_h_t, input_h_f, input_h_c):
         # time-delayed stack 
-        h_t_x = torch.zeros(input_h_t.shape)
+        h_t_x = torch.zeros(input_h_t.shape).cuda()
 
         for i in range(input_h_t.shape[2]): # line by line. TODO: parallelize
             h_t_x_slice, _ = self.t_delay_RNN_x(input_h_t[:, :, i, :])
             h_t_x[:, :, i, :] = h_t_x_slice
 
-        h_t_y = torch.zeros(input_h_t.shape)
-        h_t_z = torch.zeros(input_h_t.shape)
+        h_t_y = torch.zeros(input_h_t.shape).cuda()
+        h_t_z = torch.zeros(input_h_t.shape).cuda()
         for i in range(input_h_t.shape[1]): # line by line. TODO: parallelize
             h_t_y_slice, _ = self.t_delay_RNN_y(input_h_t[:, i, :, :])
             h_t_z_slice, _ = self.t_delay_RNN_z(input_h_t.flip(2)[:, i, :, :])
@@ -51,10 +52,10 @@ class DelayedRNN(nn.Module):
         output_h_c = input_h_c + self.W_c(h_c_temp) # residual connection, eq. (11)
 
         # frequency-delayed stack
-        h_c_expanded = output_h_c.unsqueeze(2).repeat(1, 1, self.freq, 1)
+        h_c_expanded = output_h_c.unsqueeze(1).repeat(1, self.freq, 1, 1)
         h_f_sum = input_h_f + output_h_t + h_c_expanded
 
-        h_f_temp = torch.zeros(input_h_f.shape)
+        h_f_temp = torch.zeros(input_h_f.shape).cuda()
         for i in range(h_f_sum.shape[1]):
             h_f_slice, _ = self.f_delay_RNN(h_f_sum[:, i, :, :])
             h_f_temp[:, i, :, :] = h_f_slice

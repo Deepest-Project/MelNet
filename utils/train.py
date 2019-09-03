@@ -77,7 +77,7 @@ def train(args, pt_dir, chkpt_path, trainloader, testloader, writer, logger, hp,
                     logger.error("Loss exploded to %.02f at step %d!" % (loss, step))
                     raise Exception("Loss exploded")
 
-                if step % hp.train.summary_interval == 0:
+                if step % hp.log.summary_interval == 0:
                     writer.log_training(loss, step)
                     loader.set_description("Loss %.02f at step %d" % (loss, step))
 

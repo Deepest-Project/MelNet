@@ -19,7 +19,7 @@ class MelNet(nn.Module):
             [Tier(hp=hp,
                 freq=hp.audio.n_mels // self.f_div * f_div[tier],
                 layers=hp.model.layers[tier-1],
-                first=(tier==1))
+                tierN=tier)
             for tier in range(1, hp.model.tier+1)])
 
     def forward(self, x, tier_num):
