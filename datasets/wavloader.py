@@ -5,7 +5,7 @@ import random
 import numpy as np
 from torch.utils.data import Dataset, DataLoader
 
-from utils.utils import read_wav_np
+from utils.utils import read_wav_np, cut_wav
 
 
 def create_dataloader(hp, args, train):
@@ -33,12 +33,15 @@ class AudioOnlyDataset(Dataset):
         self.data = hp.data.train if train else hp.data.test
 
         self.wav_list = glob.glob(os.path.join(self.data, '**', '*.wav'), recursive=True)
+        self.wavlen = int(hp.audio.sr * hp.audio.duration)
 
     def __len__(self):
         return len(self.wav_list)
 
     def __getitem__(self, idx):
         wav = read_wav_np(self.wav_list[idx])
+        wav = cut_wav(self.wavlen, wav)
+
         return wav
 
 

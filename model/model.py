@@ -15,14 +15,12 @@ class MelNet(nn.Module):
         self.f_div = f_div[hp.model.tier]
         self.t_div = t_div[hp.model.tier]
 
-        self.tiers = nn.ModuleList([None] + [
-            Tier(
-                hp=hp, 
-                freq=hp.audio.n_mels // self.f_div * f_div[tier], 
+        self.tiers = nn.ModuleList([None] +
+            [Tier(hp=hp,
+                freq=hp.audio.n_mels // self.f_div * f_div[tier],
                 layers=hp.model.layers[tier-1],
                 first=(tier==1))
-            for tier in range(1, hp.model.tier+1)
-        ])
+            for tier in range(1, hp.model.tier+1)])
 
     def forward(self, x, tier_num):
         assert tier_num > 0, 'tier_num should be larger than 0, got %d' % tier_num
@@ -31,4 +29,4 @@ class MelNet(nn.Module):
         return mu, std, pi
 
     def sample(self):
-        
+        raise NotImplementedError

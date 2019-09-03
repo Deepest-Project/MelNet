@@ -13,6 +13,7 @@ class MyWriter(SummaryWriter):
         self.add_scalar('train_loss', train_loss, step)
 
     def log_validation(self, fpr, tpr, thresholds, eer, thr, step):
+        raise NotImplementedError
         # self.add_image('FAR-FRR',
         #     plt.plot_far_frr_to_numpy(thresholds, far, frr), step)
         # self.add_image('ROC',

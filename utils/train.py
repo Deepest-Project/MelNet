@@ -11,11 +11,14 @@ from model.model import MelNet
 from .utils import get_commit_hash
 from .audio import MelGen
 from .tierutil import TierUtil
+from .loss import GMMLoss
 
 
 def train(args, pt_dir, chkpt_path, trainloader, testloader, writer, logger, hp, hp_str):
     model = MelNet(hp).cuda()
     melgen = MelGen(hp)
+    tierutil = TierUtil(hp)
+    criterion = GMMLoss()
 
     if hp.train.optimizer == 'rmsprop':
         optimizer = torch.optim.RMSprop(
@@ -56,10 +59,14 @@ def train(args, pt_dir, chkpt_path, trainloader, testloader, writer, logger, hp,
             for audio in loader:
                 audio = audio.cuda()
                 mel = melgen.get_logmel(audio)
+                tiers = tierutil.cut_divide_tiers(mel)
 
-                for tier in range(1, hp.model.tier+1):
+                # for tier in range(1, hp.model.tier+1):
+                for tierN in range(1, 2):
+                    mu, std, pi = model(tiers[tierN], tierN)
 
-
+                loss = criterion(tiers[tierN], mu, std, pi)
+                
                 optimizer.zero_grad()
                 loss.backward()
                 optimizer.step()

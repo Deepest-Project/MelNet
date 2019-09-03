@@ -1,3 +1,5 @@
+.idea/
+
 # logs, checkpoints
 chkpt/
 logs/
