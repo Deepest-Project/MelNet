@@ -38,7 +38,7 @@ class DelayedRNN(nn.Module):
         temp = input_h_t.transpose(1, 2) # [B, T, M, D]
         temp = temp.view(-1, M, D)
         h_t_yz, _ = self.t_delay_RNN_yz(temp)
-        h_t_yz = h_t_yz.view(B, T, M, D)
+        h_t_yz = h_t_yz.view(B, T, M, 2*D)
         h_t_yz = h_t_yz.transpose(1, 2)
 
         h_t_concat = torch.cat((h_t_x, h_t_yz), dim=3)
