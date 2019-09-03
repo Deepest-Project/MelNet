@@ -29,15 +29,18 @@ class Tier(nn.Module):
         self.W_theta = nn.Linear(num_hidden, 3*self.K)
 
     def forward(self, x):
+        # x: [B, M, T] / B=batch, M=mel, T=time
         if self.tierN == 1:
-            h_t = self.W_t_0(F.pad(x, [0, 0, -1, 1, 0, 0]).unsqueeze(-1))
-            h_f = self.W_f_0(F.pad(x, [0, 0, 0, 0, -1, 1]).unsqueeze(-1))
-            h_c = self.W_c_0(F.pad(x, [0, 0, -1, 1, 0, 0]).transpose(1, 2))
+            h_t = self.W_t_0(F.pad(x, [0, 0, 0, 0, -1, 1]).unsqueeze(-1))
+            h_f = self.W_f_0(F.pad(x, [0, 0, -1, 1, 0, 0]).unsqueeze(-1))
+            h_c = self.W_c_0(F.pad(x, [0, 0, 0, 0, -1, 1]).transpose(1, 2))
         else:
             h_t = self.W_t_0(x.unsqueeze(-1))
             h_f = self.W_f_0(x.unsqueeze(-1))
             h_c = self.W_c_0(x.transpose(1, 2))
 
+        # h_t, h_f: [B, M, T, D] / D=num_hidden
+        # h_c: [B, T, D]
 
         for layer in self.layers:
             h_t, h_f, h_c = layer(h_t, h_f, h_c)

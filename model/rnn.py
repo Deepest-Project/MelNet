@@ -27,6 +27,8 @@ class DelayedRNN(nn.Module):
 
     def forward(self, input_h_t, input_h_f, input_h_c):
         B, M, T, D = input_h_t.size()
+        Bc, Tc, Dc = input_h_c.size()
+        assert B == Bc and T == Tc and D == Dc, 'shape mismatch'
 
         ####### time-delayed stack #######
         # Fig. 2(a)-1 can be parallelized by viewing each horizontal line as batch
