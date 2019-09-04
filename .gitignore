@@ -3,6 +3,7 @@
 # configuration
 config/*
 !config/voxceleb2.yaml
+!config/unblizzard.yaml
 
 # logs, checkpoints
 chkpt/

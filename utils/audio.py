@@ -10,7 +10,7 @@ class MelGen():
         self.mel_basis = librosa.filters.mel(
             sr=hp.audio.sr, n_fft=hp.audio.n_fft, n_mels=hp.audio.n_mels)
         self.mel_basis = \
-            torch.from_numpy(self.mel_basis).cuda() # [n_mels, n_fft//2+1]
+            torch.from_numpy(self.mel_basis).cuda().float() # [n_mels, n_fft//2+1]
 
     def get_magnitude(self, x):
         x = torch.stft(x,

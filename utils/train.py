@@ -8,10 +8,10 @@ import itertools
 import traceback
 
 from model.model import MelNet
+from model.loss import GMMLoss
 from .utils import get_commit_hash
 from .audio import MelGen
 from .tierutil import TierUtil
-from .loss import GMMLoss
 
 
 def train(args, pt_dir, chkpt_path, trainloader, testloader, writer, logger, hp, hp_str):
@@ -23,6 +23,9 @@ def train(args, pt_dir, chkpt_path, trainloader, testloader, writer, logger, hp,
     if hp.train.optimizer == 'rmsprop':
         optimizer = torch.optim.RMSprop(
             model.parameters(), lr=hp.train.rmsprop.lr, momentum=hp.train.rmsprop.momentum)
+    elif hp.train.optimizer == 'adam':
+        optimizer = torch.optim.Adam(
+            model.parameters(), lr=hp.train.adam.lr)
     else:
         raise Exception("%s optimizer not supported yet" % hp.train.optimizer)
 
@@ -77,7 +80,7 @@ def train(args, pt_dir, chkpt_path, trainloader, testloader, writer, logger, hp,
                     logger.error("Loss exploded to %.02f at step %d!" % (loss, step))
                     raise Exception("Loss exploded")
 
-                if step % hp.train.summary_interval == 0:
+                if step % hp.log.summary_interval == 0:
                     writer.log_training(loss, step)
                     loader.set_description("Loss %.02f at step %d" % (loss, step))
 
