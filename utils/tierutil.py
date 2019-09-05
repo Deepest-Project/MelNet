@@ -31,13 +31,13 @@ class TierUtil():
         tiers = list()
         tiers.append(x) # final objective
         for i in range(self.hp.model.tier - 1, 1, -1):
-            if i % 2 == 1: # make consistent with utils/constant.py
+            if i % 2 == 0: # make consistent with utils/constant.py
                 tiers.append(x[:, 1::2, :])
                 x = x[:, ::2, :]
             else:
                 tiers.append(x[:, :, 1::2])
                 x = x[:, :, ::2]
         tiers.append(x) # tier 1 (last)
-        tiers = tiers[::-1]
         tiers.append(None)
+        tiers = tiers[::-1]
         return tiers # [None, Tier1, Tier2, Tier3, ..., TierN, original]

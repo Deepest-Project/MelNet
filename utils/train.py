@@ -65,7 +65,7 @@ def train(args, pt_dir, chkpt_path, trainloader, testloader, writer, logger, hp,
                 tiers = tierutil.cut_divide_tiers(mel)
 
                 # for tier in range(1, hp.model.tier+1):
-                for tierN in range(1, 2):
+                for tierN in range(2, 3):
                     mu, std, pi = model(tiers[tierN], tierN)
 
                 loss = criterion(tiers[tierN], mu, std, pi)
