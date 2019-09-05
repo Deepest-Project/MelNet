@@ -52,12 +52,13 @@ class DelayedRNN(nn.Module):
 
         ####### centralized stack #######
         output_h_c = 0.0
+        h_c_expanded = 0.0
         if self.tierN == 1:
             h_c_temp, _ = self.c_RNN(input_h_c)
             output_h_c = output_h_c + self.W_c(h_c_temp) # residual connection, eq. (11)
+            h_c_expanded = output_h_c.unsqueeze(1).repeat(1, self.freq, 1, 1)
 
         ####### frequency-delayed stack #######
-        h_c_expanded = output_h_c.unsqueeze(1).repeat(1, self.freq, 1, 1)
         h_f_sum = input_h_f + output_h_t + h_c_expanded
         h_f_sum = h_f_sum.transpose(1, 2).contiguous() # [B, T, M, D]
         h_f_sum = h_f_sum.view(-1, M, D)
