@@ -19,6 +19,8 @@ if __name__ == '__main__':
                         help="name of the model for logging, saving checkpoint")
     parser.add_argument('-t', '--tier', type=int, required=True,
                         help="Number of tier to train")
+    parser.add_argument('-b', '--batch_size', type=int, required=True,
+                        help="Batch size")
     args = parser.parse_args()
 
     hp = HParam(args.config)

@@ -11,14 +11,14 @@ from utils.utils import read_wav_np, cut_wav
 def create_dataloader(hp, args, train):
     if train:
         return DataLoader(dataset=AudioOnlyDataset(hp, args, True),
-                          batch_size=hp.train.batch_size,
+                          batch_size=args.batch_size,
                           shuffle=True,
                           num_workers=hp.train.num_workers,
                           pin_memory=True,
                           drop_last=True)
     else:
         return DataLoader(dataset=AudioOnlyDataset(hp, args, False),
-                          batch_size=1,
+                          batch_size=args.batch_size,
                           shuffle=False,
                           num_workers=1,
                           pin_memory=True,

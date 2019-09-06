@@ -18,7 +18,6 @@ audio:
 ---
 train:
   num_workers: 32
-  batch_size: 128
   optimizer: 'rmsprop'
   rmsprop:
     lr: 0.0001
