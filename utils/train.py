@@ -14,7 +14,7 @@ from .utils import get_commit_hash
 from .audio import MelGen
 from .tierutil import TierUtil
 from .constant import f_div, t_div
-from .validation improt validate
+from .validation import validate
 
 
 def train(args, pt_dir, chkpt_path, trainloader, testloader, writer, logger, hp, hp_str):
