@@ -5,8 +5,7 @@ model:
   gmm: 10
 ---
 data:
-  train: ''
-  test: ''
+  path: ''
 ---
 audio:
   sr: 22050

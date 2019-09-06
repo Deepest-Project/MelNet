@@ -13,7 +13,8 @@ from model.tier import Tier
 from .utils import get_commit_hash
 from .audio import MelGen
 from .tierutil import TierUtil
-from utils.constant import f_div, t_div
+from .constant import f_div, t_div
+from .validation improt validate
 
 
 def train(args, pt_dir, chkpt_path, trainloader, testloader, writer, logger, hp, hp_str):
@@ -98,7 +99,8 @@ def train(args, pt_dir, chkpt_path, trainloader, testloader, writer, logger, hp,
             }, save_path)
             logger.info("Saved checkpoint to: %s" % save_path)
 
-            # validate(?, ?)
+            validate(args, model, melgen, tierutil, testloader, criterion, writer, step)
+
     except Exception as e:
         logger.info("Exiting due to exception: %s" % e)
         traceback.print_exc()

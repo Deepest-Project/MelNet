@@ -22,7 +22,7 @@ def create_dataloader(hp, args, train):
                           shuffle=False,
                           num_workers=1,
                           pin_memory=True,
-                          drop_last=False)
+                          drop_last=True)
 
 
 class AudioOnlyDataset(Dataset):
@@ -30,9 +30,16 @@ class AudioOnlyDataset(Dataset):
         self.hp = hp
         self.args = args
         self.train = train
-        self.data = hp.data.train if train else hp.data.test
+        self.data = hp.data.path
 
         self.wav_list = glob.glob(os.path.join(self.data, '**', '*.wav'), recursive=True)
+        random.seed(123)
+        random.shuffle(self.wav_list)
+        if train:
+            self.wav_list = self.wav_list[:int(0.95*len(self.wav_list))]
+        else:
+            self.wav_list = self.wav_list[int(0.95*len(self.wav_list)):]
+
         self.wavlen = int(hp.audio.sr * hp.audio.duration)
 
     def __len__(self):
