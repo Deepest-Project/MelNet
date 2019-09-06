@@ -25,8 +25,7 @@ class MelNet(nn.Module):
     def forward(self, x, tier_num):
         assert tier_num > 0, 'tier_num should be larger than 0, got %d' % tier_num
 
-        mu, std, pi = self.tiers[tier_num](x)
-        return mu, std, pi
+        return self.tiers[tier_num](x)
 
     def sample(self):
         raise NotImplementedError

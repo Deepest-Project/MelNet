@@ -18,7 +18,8 @@ def train(args, pt_dir, chkpt_path, trainloader, testloader, writer, logger, hp,
     model = MelNet(hp).cuda()
     melgen = MelGen(hp)
     tierutil = TierUtil(hp)
-    criterion = GMMLoss()
+    #criterion = GMMLoss()
+    criterion = nn.SmoothL1Loss()
 
     if hp.train.optimizer == 'rmsprop':
         optimizer = torch.optim.RMSprop(
@@ -65,10 +66,12 @@ def train(args, pt_dir, chkpt_path, trainloader, testloader, writer, logger, hp,
                 tiers = tierutil.cut_divide_tiers(mel)
 
                 # for tier in range(1, hp.model.tier+1):
-                for tierN in range(2, 3):
-                    mu, std, pi = model(tiers[tierN], tierN)
+                #for tierN in range(2, 3):
+                #    mu, std, pi = model(tiers[tierN], tierN)
 
-                loss = criterion(tiers[tierN], mu, std, pi)
+                #loss = criterion(tiers[tierN], mu, std, pi)
+                result = model(tiers[1], 2)
+                loss = criterion(result, tiers[2])
                 
                 optimizer.zero_grad()
                 loss.backward()
@@ -77,12 +80,12 @@ def train(args, pt_dir, chkpt_path, trainloader, testloader, writer, logger, hp,
 
                 loss = loss.item()
                 if loss > 1e8 or math.isnan(loss):
-                    logger.error("Loss exploded to %.02f at step %d!" % (loss, step))
+                    logger.error("Loss exploded to %.04f at step %d!" % (loss, step))
                     raise Exception("Loss exploded")
 
                 if step % hp.log.summary_interval == 0:
                     writer.log_training(loss, step)
-                    loader.set_description("Loss %.02f at step %d" % (loss, step))
+                    loader.set_description("Loss %.04f at step %d" % (loss, step))
 
             save_path = os.path.join(pt_dir, '%s_%s_%03d.pt'
                 % (args.name, githash, epoch))
