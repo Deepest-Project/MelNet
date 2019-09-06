@@ -19,7 +19,7 @@ from .validation import validate
 
 def train(args, pt_dir, chkpt_path, trainloader, testloader, writer, logger, hp, hp_str):
     model = Tier(hp=hp,
-                freq=hp.audio.n_mels // f_div[hp.model.tier] * f_div[args.tier],
+                freq=hp.audio.n_mels // f_div[hp.model.tier+1] * f_div[args.tier],
                 layers=hp.model.layers[args.tier-1],
                 tierN=args.tier).cuda()
     melgen = MelGen(hp)
