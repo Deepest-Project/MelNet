@@ -11,7 +11,7 @@ class DelayedRNN(nn.Module):
         self.num_hidden = hp.model.hidden
         self.tierN = tierN
 
-        self.freq = hp.audio.n_mels * f_div[tierN] // f_div[hp.model.tier]
+        self.freq = hp.audio.n_mels * f_div[tierN] // f_div[hp.model.tier + 1]
 
         self.t_delay_RNN_x = nn.GRU(
             input_size=self.num_hidden, hidden_size=self.num_hidden, batch_first=True)

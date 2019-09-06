@@ -29,9 +29,8 @@ def read_wav_np(wavpath):
 def cut_wav(L, wav):
     samples = len(wav)
     if samples < L:
-        start = random.randint(0, L - samples)
-        # if shorter than desired segment length(3.0s), then let's pad with zero
-        wav = np.pad(wav, (start, L - samples - start),
+        #start = random.randint(0, L - samples)
+        wav = np.pad(wav, (0, L - samples),
                 'constant', constant_values=0.0)
     else:
         start = random.randint(0, samples - L)

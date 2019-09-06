@@ -9,7 +9,7 @@ import traceback
 
 # from model.model import MelNet
 from model.tier import Tier
-# from model.loss import GMMLoss
+from model.loss import GMMLoss
 from .utils import get_commit_hash
 from .audio import MelGen
 from .tierutil import TierUtil
@@ -70,6 +70,8 @@ def train(args, pt_dir, chkpt_path, trainloader, testloader, writer, logger, hp,
                 audio = audio.cuda()
                 mel = melgen.get_logmel(audio)
                 source, target = tierutil.cut_divide_tiers(mel, args.tier)
+                #mu, std, pi = model(source)
+                #loss = criterion(target, mu, std, pi)
                 result = model(source)
                 loss = criterion(result, target)
                 
