@@ -7,15 +7,20 @@ import torch.nn.functional as F
 import itertools
 import traceback
 
-from model.model import MelNet
-from model.loss import GMMLoss
+# from model.model import MelNet
+from model.tier import Tier
+# from model.loss import GMMLoss
 from .utils import get_commit_hash
 from .audio import MelGen
 from .tierutil import TierUtil
+from utils.constant import f_div, t_div
 
 
 def train(args, pt_dir, chkpt_path, trainloader, testloader, writer, logger, hp, hp_str):
-    model = MelNet(hp).cuda()
+    model = Tier(hp=hp,
+                freq=hp.audio.n_mels // f_div[hp.model.tier] * f_div[args.tier],
+                layers=hp.model.layers[args.tier-1],
+                tierN=args.tier).cuda()
     melgen = MelGen(hp)
     tierutil = TierUtil(hp)
     #criterion = GMMLoss()
@@ -63,15 +68,9 @@ def train(args, pt_dir, chkpt_path, trainloader, testloader, writer, logger, hp,
             for audio in loader:
                 audio = audio.cuda()
                 mel = melgen.get_logmel(audio)
-                tiers = tierutil.cut_divide_tiers(mel)
-
-                # for tier in range(1, hp.model.tier+1):
-                #for tierN in range(2, 3):
-                #    mu, std, pi = model(tiers[tierN], tierN)
-
-                #loss = criterion(tiers[tierN], mu, std, pi)
-                result = model(tiers[1], 2)
-                loss = criterion(result, tiers[2])
+                source, target = tierutil.cut_divide_tiers(mel, args.tier)
+                result = model(source)
+                loss = criterion(result, target)
                 
                 optimizer.zero_grad()
                 loss.backward()
@@ -87,8 +86,8 @@ def train(args, pt_dir, chkpt_path, trainloader, testloader, writer, logger, hp,
                     writer.log_training(loss, step)
                     loader.set_description("Loss %.04f at step %d" % (loss, step))
 
-            save_path = os.path.join(pt_dir, '%s_%s_%03d.pt'
-                % (args.name, githash, epoch))
+            save_path = os.path.join(pt_dir, '%s_%s_tier%d_%03d.pt'
+                % (args.name, githash, args.tier, epoch))
             torch.save({
                 'model': model.state_dict(),
                 'optimizer': optimizer.state_dict(),

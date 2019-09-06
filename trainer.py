@@ -17,6 +17,8 @@ if __name__ == '__main__':
                         help="path of checkpoint pt file to resume training")
     parser.add_argument('-n', '--name', type=str, required=True,
                         help="name of the model for logging, saving checkpoint")
+    parser.add_argument('-t', '--tier', type=int, required=True,
+                        help="Number of tier to train")
     args = parser.parse_args()
 
     hp = HParam(args.config)
