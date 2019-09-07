@@ -65,11 +65,12 @@ def train(args, pt_dir, chkpt_path, trainloader, testloader, writer, logger, hp,
     try:
         model.train()
         for epoch in itertools.count(init_epoch+1):
+            trainloader.tier = args.tier
             loader = tqdm.tqdm(trainloader, desc='Train data loader')
-            for audio in loader:
-                audio = audio.cuda()
-                mel = melgen.get_logmel(audio)
-                source, target = tierutil.cut_divide_tiers(mel, args.tier)
+            for source, target in loader:
+                # audio = audio.cuda()
+                # mel = melgen.get_logmel(audio)
+                # source, target = tierutil.cut_divide_tiers(mel, args.tier)
                 #mu, std, pi = model(source)
                 #loss = criterion(target, mu, std, pi)
                 result = model(source)

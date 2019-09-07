@@ -6,7 +6,8 @@ import numpy as np
 from torch.utils.data import Dataset, DataLoader
 
 from utils.utils import read_wav_np, cut_wav
-
+from utils.audio import MelGen
+from utils.tierutil import TierUtil
 
 def create_dataloader(hp, args, train):
     if train:
@@ -31,6 +32,8 @@ class AudioOnlyDataset(Dataset):
         self.args = args
         self.train = train
         self.data = hp.data.path
+        self.melgen = MelGen(hp)
+        self.tierutil = TierUtil(hp)
 
         self.wav_list = glob.glob(os.path.join(self.data, '**', '*.wav'), recursive=True)
         random.seed(123)
@@ -41,15 +44,18 @@ class AudioOnlyDataset(Dataset):
             self.wav_list = self.wav_list[int(0.95*len(self.wav_list)):]
 
         self.wavlen = int(hp.audio.sr * hp.audio.duration)
+        self.tier = 0
 
     def __len__(self):
         return len(self.wav_list)
 
     def __getitem__(self, idx):
         wav = read_wav_np(self.wav_list[idx])
-        wav = cut_wav(self.wavlen, wav)
+        wav = cut_wav(self.wavlen, wav).cuda()
+        mel = self.melgen.get_logmel(wav)
+        source, target = self.tierutil.cut_divide_tiers(mel, self.tier)
 
-        return wav
+        return source, target
 
 
 class AudioTextDataset(Dataset):
