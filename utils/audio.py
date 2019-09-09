@@ -40,7 +40,7 @@ class MelGen():
         return self.db_to_amp(self.denormalize(x) + self.hp.audio.ref_level_db)
 
     def amp_to_db(self, x):
-        return 20.0 * torch.log10(torch.max(x, 1e-6))
+        return 20.0 * torch.log10(torch.max(x, torch.tensor(1e-6).cuda()))
 
     def normalize(self, x):
         return torch.clamp(x / -self.hp.audio.min_level_db, -1.0, 0.0) + 1.0
