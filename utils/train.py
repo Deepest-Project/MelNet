@@ -68,7 +68,7 @@ def train(args, pt_dir, chkpt_path, trainloader, testloader, writer, logger, hp,
             loader = tqdm.tqdm(trainloader, desc='Train data loader')
             for audio in loader:
                 audio = audio.cuda()
-                mel = melgen.get_logmel(audio)
+                mel = melgen.get_normalized_mel(audio)
                 source, target = tierutil.cut_divide_tiers(mel, args.tier)
                 #mu, std, pi = model(source)
                 #loss = criterion(target, mu, std, pi)
