@@ -59,7 +59,6 @@ class Tier(nn.Module):
             x_f = x.clone()
             
             for i in range(n_slice):
-                print(i)
                 h_t = self.W_t_0(x_t.unsqueeze(-1))
                 h_f = self.W_f_0(x_f.unsqueeze(-1))
                 h_c = self.W_c_0(x_t.transpose(1, 2))

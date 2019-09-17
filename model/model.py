@@ -29,7 +29,7 @@ class MelNet(nn.Module):
         return mu, std, pi
 
        
-    def interleave(self, tier_a, tier_b, axis='time'):
+    def interleave(self, tier_a, tier_b, axis):
         assert axis in ['time', 'freq'], "Axis shoud be either time or frequncy"
         
         if axis=='time':
@@ -56,20 +56,20 @@ class MelNet(nn.Module):
         
         tier1 = self.tiers[1].sample(x)
         tier2 = self.tiers[2].sample(tier1)
-        tier1_2 = self.interleave(tier1, tier2)
+        tier1_2 = self.interleave(tier1, tier2, axis='freq')
         
         tier3 = self.tiers[3].sample( tier1_2 )
-        tier1_2_3 = self.interleave(tier1_2, tier3)
+        tier1_2_3 = self.interleave(tier1_2, tier3, axis='time')
         
         tier4 = self.tiers[4].sample( tier1_2_3 )
-        tier1_2_3_4 = self.interleave(tier1_2_3, tier4)
+        tier1_2_3_4 = self.interleave(tier1_2_3, tier4, axis='freq')
         
         tier5 = self.tiers[5].sample( tier1_2_3_4 )
-        tier1_2_3_4_5 = self.interleave(tier1_2_3_4, tier5)
+        tier1_2_3_4_5 = self.interleave(tier1_2_3_4, tier5, axis='time')
         
         tier6 = self.tiers[6].sample( tier1_2_3_4_5 )
         
-        output = self.interleave(tier1_2_3_4_5, tier6)
+        output = self.interleave(tier1_2_3_4_5, tier6, axis='freq')
             
         return output
 
