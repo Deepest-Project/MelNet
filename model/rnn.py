@@ -2,12 +2,14 @@ import torch
 import torch.nn as nn
 import torch.nn.functional as F
 
+from .stack_c import Stack_C
 from utils.constant import f_div
 
 
 class DelayedRNN(nn.Module):
     def __init__(self, hp, tierN):
         super(DelayedRNN, self).__init__()
+        self.TTS = hp.TTS
         self.num_hidden = hp.hidden_dim
         self.tierN = tierN
 
@@ -17,17 +19,17 @@ class DelayedRNN(nn.Module):
         self.t_delay_RNN_yz = nn.LSTM(input_size=self.num_hidden, hidden_size=self.num_hidden, batch_first=True, bidirectional=True)
 
         # use central stack only at initial tier
-        if tierN == 1:
-            self.c_RNN = nn.LSTM(input_size=self.num_hidden, hidden_size=self.num_hidden, batch_first=True)
+        if (tierN == 1):
+            self.c_RNN = Stack_C(hp)
+            
         self.f_delay_RNN = nn.LSTM(input_size=self.num_hidden, hidden_size=self.num_hidden, batch_first=True)
 
         self.W_t = nn.Linear(3*self.num_hidden, self.num_hidden)
         self.W_c = nn.Linear(self.num_hidden, self.num_hidden)
         self.W_f = nn.Linear(self.num_hidden, self.num_hidden)
 
-    def forward(self, input_h_t, input_h_f, input_h_c=0.0):
-        # input_h_t, input_h_f: [B, M, T, D]
-        # input_h_c: [B, T, D]
+    def forward(self, input_h_t, input_h_f, input_h_c=0.0, memory=None):
+        # input_h_t, input_h_f: [B, M, T, D] / input_h_c: [B, T, D]
         B, M, T, D = input_h_t.size()
 
         ####### time-delayed stack #######
@@ -50,10 +52,11 @@ class DelayedRNN(nn.Module):
         output_h_c = 0.0
         h_c_expanded = 0.0
         if self.tierN == 1:
-            h_c_temp, _ = self.c_RNN(input_h_c)
+            h_c_temp, _ = self.c_RNN(input_h_c, memory)
             output_h_c = input_h_c + self.W_c(h_c_temp) # residual connection, eq. (11)
             h_c_expanded = output_h_c.unsqueeze(1).repeat(1, self.freq, 1, 1)
-
+            
+            
         ####### frequency-delayed stack #######
         h_f_sum = input_h_f + output_h_t + h_c_expanded
         h_f_sum = h_f_sum.transpose(1, 2).contiguous() # [B, T, M, D]

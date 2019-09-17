@@ -9,6 +9,7 @@ from .rnn import DelayedRNN
 class Tier(nn.Module):
     def __init__(self, hp, freq, layers, tierN):
         super(Tier, self).__init__()
+        self.TTS = hp.TTS
         self.tierN = tierN
 
         self.W_t_0 = nn.Linear(1, hp.hidden_dim)
@@ -26,8 +27,17 @@ class Tier(nn.Module):
         # map output to produce GMM parameter eq. (10)
         self.W_theta = nn.Linear(hp.hidden_dim, 3*self.K)
 
-    def forward(self, x):
-        # x: [B, M, T] / B=batch, M=mel, T=time
+        if self.TTS==True:
+            self.TextEncoder = nn.Sequential(nn.Embedding(hp.n_voca, hp.hidden_dim),
+                                             nn.LSTM(input_size=hp.num_hidden, hidden_size=self.num_hidden, batch_first=True))
+        
+        
+    def forward(self, x, text=None):
+        if text is None:
+            memory = None
+        elif:
+            memory = self.TextEncoder(text)
+            
         if self.tierN == 1:
             h_t = self.W_t_0(F.pad(x, [1, -1, 0, 0, 0, 0]).unsqueeze(-1))
             h_f = self.W_f_0(F.pad(x, [0, 0, 1, -1, 0, 0]).unsqueeze(-1))
@@ -37,11 +47,9 @@ class Tier(nn.Module):
             h_f = self.W_f_0(x.unsqueeze(-1))
             h_c = self.W_c_0(x.transpose(1, 2))
 
-        # h_t, h_f: [B, M, T, D] / D=hidden_dim
-        # h_c: [B, T, D]
-
+        # h_t, h_f: [B, M, T, D] / h_c: [B, T, D]
         for layer in self.layers:
-            h_t, h_f, h_c = layer(h_t, h_f, h_c)
+            h_t, h_f, h_c = layer(h_t, h_f, h_c, memory)
 
         theta_hat = self.W_theta(h_f)
 
@@ -51,12 +59,14 @@ class Tier(nn.Module):
 
         return mu, std, pi
     
-    def sample(self, x):
+    
+    
+    
+    def sample(self, x, text=None):
         # x: [1, M, T] / B=1, M=mel, T=time
         if self.tierN == 1:
             n_slice = x.size(-1)
-            x_t = x.clone()
-            x_f = x.clone()
+            x_t, x_f = x.clone(), x.clone()
             
             for i in range(n_slice):
                 h_t = self.W_t_0(x_t.unsqueeze(-1))
@@ -80,6 +90,7 @@ class Tier(nn.Module):
         
         else:
             return self.forward(x)
+        
         
         
         
