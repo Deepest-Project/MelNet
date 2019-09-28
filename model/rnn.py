@@ -13,16 +13,16 @@ class DelayedRNN(nn.Module):
 
         self.freq = hp.audio.n_mels * f_div[tierN] // f_div[hp.model.tier + 1]
 
-        self.t_delay_RNN_x = nn.GRU(
+        self.t_delay_RNN_x = nn.LSTM(
             input_size=self.num_hidden, hidden_size=self.num_hidden, batch_first=True)
-        self.t_delay_RNN_yz = nn.GRU(
+        self.t_delay_RNN_yz = nn.LSTM(
             input_size=self.num_hidden, hidden_size=self.num_hidden, batch_first=True, bidirectional=True)
 
         # use central stack only at initial tier
         if tierN == 1:
-            self.c_RNN = nn.GRU(
+            self.c_RNN = nn.LSTM(
                 input_size=self.num_hidden, hidden_size=self.num_hidden, batch_first=True)
-        self.f_delay_RNN = nn.GRU(
+        self.f_delay_RNN = nn.LSTM(
             input_size=self.num_hidden, hidden_size=self.num_hidden, batch_first=True)
 
         self.W_t = nn.Linear(3*self.num_hidden, self.num_hidden)

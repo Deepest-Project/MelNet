@@ -13,7 +13,7 @@ def validate(args, model, melgen, tierutil, testloader, criterion, writer, step)
     with torch.no_grad():
         for audio in loader:
             audio = audio.cuda()
-            mel = melgen.get_logmel(audio)
+            mel = melgen.get_normalized_mel(audio)
             source, target = tierutil.cut_divide_tiers(mel, args.tier)
             result = model(source)
             loss = criterion(result, target)

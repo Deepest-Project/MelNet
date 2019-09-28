@@ -15,6 +15,8 @@ audio:
   win_length: 1080
   n_fft: 1080
   num_freq: 541
+  ref_level_db: 20.0
+  min_level_db: -80.0
 ---
 train:
   num_workers: 32

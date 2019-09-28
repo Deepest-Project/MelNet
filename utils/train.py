@@ -67,7 +67,6 @@ def train(args, pt_dir, chkpt_path, trainloader, testloader, writer, logger, hp,
         for epoch in itertools.count(init_epoch+1):
             trainloader.tier = args.tier
             loader = tqdm.tqdm(trainloader, desc='Train data loader')
-<<<<<<< Updated upstream
             for source, target in loader:
                 # audio = audio.cuda()
                 # mel = melgen.get_logmel(audio)
@@ -76,15 +75,6 @@ def train(args, pt_dir, chkpt_path, trainloader, testloader, writer, logger, hp,
                 #loss = criterion(target, mu, std, pi)
                 result = model(source)
                 loss = criterion(result, target)
-=======
-            for tiers in loader:
-
-                # for tier in range(1, hp.model.tier+1):
-                for tierN in range(2, 3):
-                    mu, std, pi = model(tiers[tierN], tierN)
-
-                loss = criterion(tiers[tierN], mu, std, pi)
->>>>>>> Stashed changes
                 
                 optimizer.zero_grad()
                 loss.backward()
