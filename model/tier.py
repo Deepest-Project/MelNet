@@ -32,9 +32,9 @@ class Tier(nn.Module):
     def forward(self, x):
         # x: [B, M, T] / B=batch, M=mel, T=time
         if self.tierN == 1:
-            h_t = self.W_t_0(F.pad(x, [1, -1, 0, 0, 0, 0]).unsqueeze(-1))
-            h_f = self.W_f_0(F.pad(x, [0, 0, 1, -1, 0, 0]).unsqueeze(-1))
-            h_c = self.W_c_0(F.pad(x, [1, -1, 0, 0, 0, 0]).transpose(1, 2))
+            h_t = self.W_t_0(F.pad(x, [1, -1]).unsqueeze(-1))
+            h_f = self.W_f_0(F.pad(x, [0, 0, 1, -1]).unsqueeze(-1))
+            h_c = self.W_c_0(F.pad(x, [1, -1]).transpose(1, 2))
         else:
             h_t = self.W_t_0(x.unsqueeze(-1))
             h_f = self.W_f_0(x.unsqueeze(-1))

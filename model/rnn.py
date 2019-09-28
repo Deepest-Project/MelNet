@@ -55,8 +55,8 @@ class DelayedRNN(nn.Module):
         h_c_expanded = 0.0
         if self.tierN == 1:
             h_c_temp, _ = self.c_RNN(input_h_c)
-            output_h_c = output_h_c + self.W_c(h_c_temp) # residual connection, eq. (11)
-            h_c_expanded = output_h_c.unsqueeze(1).repeat(1, self.freq, 1, 1)
+            output_h_c = input_h_c + self.W_c(h_c_temp) # residual connection, eq. (11)
+            h_c_expanded = output_h_c.unsqueeze(1)
 
         ####### frequency-delayed stack #######
         h_f_sum = input_h_f + output_h_t + h_c_expanded
