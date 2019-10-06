@@ -26,7 +26,7 @@ def train(args, pt_dir, chkpt_path, trainloader, testloader, writer, logger, hp,
     melgen = MelGen(hp)
     tierutil = TierUtil(hp)
     #criterion = GMMLoss()
-    criterion = nn.SmoothL1Loss()
+    criterion = nn.MSELoss()
 
     if hp.train.optimizer == 'rmsprop':
         optimizer = torch.optim.RMSprop(
@@ -74,8 +74,8 @@ def train(args, pt_dir, chkpt_path, trainloader, testloader, writer, logger, hp,
                 # source, target = tierutil.cut_divide_tiers(mel, args.tier)
                 #mu, std, pi = model(source)
                 #loss = criterion(target, mu, std, pi)
-                result = model(source)
-                loss = criterion(result, target)
+                result = model(source.cuda())
+                loss = criterion(result, target.cuda())
                 
                 optimizer.zero_grad()
                 loss.backward()
