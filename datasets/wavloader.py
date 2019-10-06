@@ -54,7 +54,7 @@ class AudioOnlyDataset(Dataset):
 
     def __getitem__(self, idx):
         wav = read_wav_np(self.wav_list[idx])
-        wav = cut_wav(self.wavlen, wav).cuda()
+        wav = torch.from_numpy(cut_wav(self.wavlen, wav)).cuda()
         mel = self.melgen.get_logmel(wav)
         source, target = self.tierutil.cut_divide_tiers(mel, self.tier)
 

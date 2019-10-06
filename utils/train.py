@@ -1,11 +1,12 @@
 import os
 import math
-import tqdm
 import torch
 import torch.nn as nn
 import torch.nn.functional as F
 import itertools
 import traceback
+
+from tqdm import tqdm
 
 # from model.model import MelNet
 from model.tier import Tier
@@ -66,7 +67,7 @@ def train(args, pt_dir, chkpt_path, trainloader, testloader, writer, logger, hp,
         model.train()
         for epoch in itertools.count(init_epoch+1):
             trainloader.tier = args.tier
-            loader = tqdm.tqdm(trainloader, desc='Train data loader')
+            loader = tqdm(trainloader, desc='Train data loader')
             for source, target in loader:
                 # audio = audio.cuda()
                 # mel = melgen.get_logmel(audio)
