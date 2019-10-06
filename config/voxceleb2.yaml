@@ -5,7 +5,7 @@ model:
   gmm: 10
 ---
 data:
-  path: ''
+  path: 'VoxCeleb2\\'
 ---
 audio:
   sr: 16000

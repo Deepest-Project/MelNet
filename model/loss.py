@@ -12,10 +12,5 @@ class GMMLoss(nn.Module):
         x = x.unsqueeze(-1)
         distrib = torch.exp(-((x - mu) / std) ** 2 / 2) / (std * np.sqrt(2 * np.pi))
         distrib = torch.sum(pi * distrib, dim=3)
-<<<<<<< Updated upstream
-        loss = -1.0 * torch.log(distrib + 1e-6) # NLL
-        return torch.mean(loss)
-=======
         loss = -torch.log(distrib).mean() # NLL
         return loss
->>>>>>> Stashed changes

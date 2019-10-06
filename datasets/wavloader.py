@@ -8,10 +8,6 @@ from torch.utils.data import Dataset, DataLoader
 from utils.utils import read_wav_np, cut_wav
 from utils.audio import MelGen
 from utils.tierutil import TierUtil
-<<<<<<< Updated upstream
-=======
-
->>>>>>> Stashed changes
 
 def create_dataloader(hp, args, train):
     if train:
@@ -58,19 +54,11 @@ class AudioOnlyDataset(Dataset):
 
     def __getitem__(self, idx):
         wav = read_wav_np(self.wav_list[idx])
-<<<<<<< Updated upstream
         wav = cut_wav(self.wavlen, wav).cuda()
         mel = self.melgen.get_logmel(wav)
         source, target = self.tierutil.cut_divide_tiers(mel, self.tier)
 
         return source, target
-=======
-        wav = cut_wav(self.wavlen, wav)
-        mel = self.melgen.get_logmel(wav)
-        tiers = self.tierutil.cut_divide_tiers(mel)
-
-        return tiers
->>>>>>> Stashed changes
 
 
 class AudioTextDataset(Dataset):
