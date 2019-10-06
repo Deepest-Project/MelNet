@@ -11,12 +11,12 @@ def validate(args, model, melgen, tierutil, testloader, criterion, writer, step)
     test_loss = 0.0
     loader = tqdm.tqdm(testloader, desc='Testing is in progress')
     with torch.no_grad():
-        for audio in loader:
-            audio = audio.cuda()
-            mel = melgen.get_normalized_mel(audio)
-            source, target = tierutil.cut_divide_tiers(mel, args.tier)
-            result = model(source)
-            loss = criterion(result, target)
+        for source, target in loader:
+            # audio = audio.cuda()
+            # mel = melgen.get_normalized_mel(audio)
+            # source, target = tierutil.cut_divide_tiers(mel, args.tier)
+            result = model(source.cuda())
+            loss = criterion(result, target.cuda())
 
             loss = loss.item()
             test_loss += loss
