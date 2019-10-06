@@ -1,7 +1,7 @@
 import random
 import numpy as np
 import subprocess
-from scipy.io.wavfile import read
+from pydub import AudioSegment
 
 
 def get_commit_hash():
@@ -10,7 +10,11 @@ def get_commit_hash():
 
 
 def read_wav_np(wavpath):
-    sr, wav = read(wavpath)
+    # sr, wav = read(wavpath)
+    file_format = wavpath.split('.')[-1]
+    audio = AudioSegment.from_file(wavpath, file_format)
+    data = audio.raw_data
+    wav = np.frombuffer(data, dtype=np.uint8)
     
     if len(wav.shape) == 2:
         wav = wav[:, 0]
