@@ -27,7 +27,7 @@ class Tier(nn.Module):
 
         # map output to produce GMM parameter eq. (10)
         # temporarily don't use GMM. Instead, directly estimate value
-        self.W_theta = nn.Linear(num_hidden, 1)
+        self.W_theta = nn.Linear(num_hidden, 30)
 
     def forward(self, x):
         # x: [B, M, T] / B=batch, M=mel, T=time
@@ -47,7 +47,6 @@ class Tier(nn.Module):
             h_t, h_f, h_c = layer(h_t, h_f, h_c)
 
         theta_hat = self.W_theta(h_f)
-        return theta_hat.squeeze(-1)
 
         mu = theta_hat[..., :self.K] # eq. (3)
         std = torch.exp(theta_hat[..., self.K:2*self.K]) # eq. (4)
