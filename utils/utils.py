@@ -10,7 +10,6 @@ def get_commit_hash():
 
 
 def read_wav_np(wavpath):
-    # sr, wav = read(wavpath)
     file_format = wavpath.split('.')[-1]
     audio = AudioSegment.from_file(wavpath, file_format)
     data = audio.raw_data

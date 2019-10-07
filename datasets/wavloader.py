@@ -35,13 +35,13 @@ class AudioOnlyDataset(Dataset):
         self.melgen = MelGen(hp)
         self.tierutil = TierUtil(hp)
 
-        self.wav_list = glob.glob(os.path.join(self.data, '**', '*.wav'), recursive=True)
+        self.file_list = glob.glob(os.path.join(self.data, '**', '*.m4a'), recursive=True)
         random.seed(123)
-        random.shuffle(self.wav_list)
+        random.shuffle(self.file_list)
         if train:
-            self.wav_list = self.wav_list[:int(0.95*len(self.wav_list))]
+            self.file_list = self.file_list[:int(0.95*len(self.file_list))]
         else:
-            self.wav_list = self.wav_list[int(0.95*len(self.wav_list)):]
+            self.file_list = self.file_list[int(0.95*len(self.file_list)):]
 
         self.wavlen = int(hp.audio.sr * hp.audio.duration)
         self.tier = 0
@@ -50,10 +50,10 @@ class AudioOnlyDataset(Dataset):
         self.tierutil = TierUtil(hp)
 
     def __len__(self):
-        return len(self.wav_list)
+        return len(self.file_list)
 
     def __getitem__(self, idx):
-        wav = read_wav_np(self.wav_list[idx])
+        wav = read_wav_np(self.file_list[idx])
         wav = torch.from_numpy(cut_wav(self.wavlen, wav))
         mel = self.melgen.get_normalized_mel(wav)
         source, target = self.tierutil.cut_divide_tiers(mel, self.tier)
