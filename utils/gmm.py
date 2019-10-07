@@ -1,4 +1,5 @@
 import torch
+import numpy as np
 
 def get_pi_indices(pi):
     cumsum = torch.cumsum(pi.cpu(), dim=3)
@@ -8,6 +9,8 @@ def get_pi_indices(pi):
 
 def sample_gmm(mu, std, pi):
     indices = get_pi_indices(pi)
-    mu = mu.reshape(-1, mu.shape[-1])[indices].reshape_as(std)
-    std = std.reshape(-1, std.shape[-1])[indices].reshape_as(mu)
+    mu = mu.reshape(-1, mu.shape[-1])
+    mu = mu[np.arange(mu.shape[0]), indices].reshape(std.shape[:-1])
+    std = std.reshape(-1, std.shape[-1])
+    std = std[np.arange(std.shape[0]), indices].reshape(mu.shape)
     return torch.normal(mu, std).reshape_as(mu)
