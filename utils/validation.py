@@ -22,7 +22,7 @@ def validate(args, model, melgen, tierutil, testloader, criterion, writer, step)
         test_loss /= len(testloader.dataset)
         source = source[0].cpu().detach().numpy()
         target = target[0].cpu().detach().numpy()
-        result = sample_gmm(mu, std, pi)[0].cpu().detach.numpy()
+        result = sample_gmm(mu, std, pi)[0].cpu().detach().numpy()
         writer.log_validation(test_loss, source, target, result, step)
 
     model.train()
