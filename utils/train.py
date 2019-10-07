@@ -29,10 +29,20 @@ def train(args, pt_dir, chkpt_path, trainloader, testloader, writer, logger, hp,
 
     if hp.train.optimizer == 'rmsprop':
         optimizer = torch.optim.RMSprop(
-            model.parameters(), lr=hp.train.rmsprop.lr, momentum=hp.train.rmsprop.momentum)
+            model.parameters(), 
+            lr=hp.train.rmsprop.lr, 
+            momentum=hp.train.rmsprop.momentum
+        )
     elif hp.train.optimizer == 'adam':
         optimizer = torch.optim.Adam(
-            model.parameters(), lr=hp.train.adam.lr)
+            model.parameters(), 
+            lr=hp.train.adam.lr
+        )
+    elif hp.train.optimizer == 'SGD':
+        optimizer = torch.optim.SGD(
+            model.parameters(), 
+            lr=hp.train.sgd.lr
+        )
     else:
         raise Exception("%s optimizer not supported yet" % hp.train.optimizer)
 
