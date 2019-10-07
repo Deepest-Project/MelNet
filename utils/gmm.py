@@ -10,4 +10,4 @@ def sample_gmm(mu, std, pi):
     indices = get_pi_indices(pi)
     mu = mu[indices]
     std = std[indices]
-    return torch.normal(mu, std)
+    return torch.normal(mu, std).reshape_as(mu)
