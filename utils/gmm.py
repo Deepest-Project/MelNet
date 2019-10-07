@@ -4,7 +4,7 @@ import numpy as np
 def get_pi_indices(pi):
     cumsum = torch.cumsum(pi.cpu(), dim=3)
     rand = torch.rand(pi.shape[:-1] + (1,))
-    indices = pi.shape[-1] - (cumsum < rand).sum(dim=3)
+    indices = (cumsum < rand).sum(dim=3)
     return indices.flatten().detach().numpy()
 
 def sample_gmm(mu, std, pi):
