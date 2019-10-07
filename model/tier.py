@@ -26,14 +26,15 @@ class Tier(nn.Module):
         self.pi_softmax = nn.Softmax(dim=3)
 
         # map output to produce GMM parameter eq. (10)
-        self.W_theta = nn.Linear(num_hidden, 3*self.K)
+        # temporarily don't use GMM. Instead, directly estimate value
+        self.W_theta = nn.Linear(num_hidden, 1)
 
     def forward(self, x):
         # x: [B, M, T] / B=batch, M=mel, T=time
         if self.tierN == 1:
-            h_t = self.W_t_0(F.pad(x, [1, -1, 0, 0, 0, 0]).unsqueeze(-1))
-            h_f = self.W_f_0(F.pad(x, [0, 0, 1, -1, 0, 0]).unsqueeze(-1))
-            h_c = self.W_c_0(F.pad(x, [1, -1, 0, 0, 0, 0]).transpose(1, 2))
+            h_t = self.W_t_0(F.pad(x, [1, -1]).unsqueeze(-1))
+            h_f = self.W_f_0(F.pad(x, [0, 0, 1, -1]).unsqueeze(-1))
+            h_c = self.W_c_0(F.pad(x, [1, -1]).transpose(1, 2))
         else:
             h_t = self.W_t_0(x.unsqueeze(-1))
             h_f = self.W_f_0(x.unsqueeze(-1))
@@ -46,6 +47,7 @@ class Tier(nn.Module):
             h_t, h_f, h_c = layer(h_t, h_f, h_c)
 
         theta_hat = self.W_theta(h_f)
+        return theta_hat.squeeze(-1)
 
         mu = theta_hat[..., :self.K] # eq. (3)
         std = torch.exp(theta_hat[..., self.K:2*self.K]) # eq. (4)

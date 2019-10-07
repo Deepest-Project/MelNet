@@ -12,7 +12,7 @@ def fig2np(fig):
     return data
 
 def plot_spectrogram_to_numpy(spectrogram):
-    fig, ax = plt.subplots(figsize=(6, 6))
+    fig, ax = plt.subplots(figsize=(8, 4))
     im = ax.imshow(spectrogram, aspect='auto', origin='lower',
                    interpolation='none')
     plt.colorbar(im, ax=ax)

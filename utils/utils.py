@@ -1,7 +1,7 @@
 import random
 import numpy as np
 import subprocess
-from scipy.io.wavfile import read
+from pydub import AudioSegment
 
 
 def get_commit_hash():
@@ -10,7 +10,11 @@ def get_commit_hash():
 
 
 def read_wav_np(wavpath):
-    sr, wav = read(wavpath)
+    # sr, wav = read(wavpath)
+    file_format = wavpath.split('.')[-1]
+    audio = AudioSegment.from_file(wavpath, file_format)
+    data = audio.raw_data
+    wav = np.frombuffer(data, dtype=np.uint8)
     
     if len(wav.shape) == 2:
         wav = wav[:, 0]
@@ -29,9 +33,8 @@ def read_wav_np(wavpath):
 def cut_wav(L, wav):
     samples = len(wav)
     if samples < L:
-        start = random.randint(0, L - samples)
-        # if shorter than desired segment length(3.0s), then let's pad with zero
-        wav = np.pad(wav, (start, L - samples - start),
+        #start = random.randint(0, L - samples)
+        wav = np.pad(wav, (0, L - samples),
                 'constant', constant_values=0.0)
     else:
         start = random.randint(0, samples - L)

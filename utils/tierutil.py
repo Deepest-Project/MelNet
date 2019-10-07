@@ -18,9 +18,9 @@ class TierUtil():
         # 6*16000 // 180 + 1 = 534 (voxceleb2)
         # 10*16000 // 180 + 1 = 889 (tedlium3)        
 
-    def cut_divide_tiers(self, x):
-        x = x[:, :, :-(x.size(-1) % self.t_div)]
-        B, M, T = x.size()
+    def cut_divide_tiers(self, x, tierNo):
+        x = x[:, :-(x.size(-1) % self.t_div)]
+        M, T = x.size()
         assert M % self.f_div == 0, \
             'freq(mel) dimension should be divisible by %d, got %d.' \
             % (self.f_div, M)
@@ -29,15 +29,17 @@ class TierUtil():
             % (self.t_div, T)
 
         tiers = list()
-        tiers.append(x) # final objective
-        for i in range(self.hp.model.tier - 1, 1, -1):
+        for i in range(self.hp.model.tier, max(1, tierNo-1), -1):
             if i % 2 == 0: # make consistent with utils/constant.py
-                tiers.append(x[:, 1::2, :])
-                x = x[:, ::2, :]
+                tiers.append(x[1::2, :])
+                x = x[::2, :]
             else:
-                tiers.append(x[:, :, 1::2])
-                x = x[:, :, ::2]
-        tiers.append(x) # tier 1 (last)
-        tiers.append(None)
-        tiers = tiers[::-1]
-        return tiers # [None, Tier1, Tier2, Tier3, ..., TierN, original]
+                tiers.append(x[:, 1::2])
+                x = x[:, ::2]
+        tiers.append(x)
+
+        # return source, target
+        if tierNo == 1:
+            return tiers[-1], tiers[-1]
+        else:
+            return tiers[-2], tiers[-1]

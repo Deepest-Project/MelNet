@@ -11,18 +11,18 @@ class DelayedRNN(nn.Module):
         self.num_hidden = hp.model.hidden
         self.tierN = tierN
 
-        self.freq = hp.audio.n_mels * f_div[tierN] // f_div[hp.model.tier]
+        self.freq = hp.audio.n_mels * f_div[tierN] // f_div[hp.model.tier + 1]
 
-        self.t_delay_RNN_x = nn.GRU(
+        self.t_delay_RNN_x = nn.LSTM(
             input_size=self.num_hidden, hidden_size=self.num_hidden, batch_first=True)
-        self.t_delay_RNN_yz = nn.GRU(
+        self.t_delay_RNN_yz = nn.LSTM(
             input_size=self.num_hidden, hidden_size=self.num_hidden, batch_first=True, bidirectional=True)
 
         # use central stack only at initial tier
         if tierN == 1:
-            self.c_RNN = nn.GRU(
+            self.c_RNN = nn.LSTM(
                 input_size=self.num_hidden, hidden_size=self.num_hidden, batch_first=True)
-        self.f_delay_RNN = nn.GRU(
+        self.f_delay_RNN = nn.LSTM(
             input_size=self.num_hidden, hidden_size=self.num_hidden, batch_first=True)
 
         self.W_t = nn.Linear(3*self.num_hidden, self.num_hidden)
@@ -55,8 +55,8 @@ class DelayedRNN(nn.Module):
         h_c_expanded = 0.0
         if self.tierN == 1:
             h_c_temp, _ = self.c_RNN(input_h_c)
-            output_h_c = output_h_c + self.W_c(h_c_temp) # residual connection, eq. (11)
-            h_c_expanded = output_h_c.unsqueeze(1).repeat(1, self.freq, 1, 1)
+            output_h_c = input_h_c + self.W_c(h_c_temp) # residual connection, eq. (11)
+            h_c_expanded = output_h_c.unsqueeze(1)
 
         ####### frequency-delayed stack #######
         h_f_sum = input_h_f + output_h_t + h_c_expanded
