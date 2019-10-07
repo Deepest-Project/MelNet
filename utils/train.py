@@ -92,7 +92,7 @@ def train(args, pt_dir, chkpt_path, trainloader, testloader, writer, logger, hp,
                     raise Exception("Loss exploded")
 
                 if step % hp.log.summary_interval == 0:
-                    writer.log_training(loss, step)
+                    writer.log_training(loss, mu, std, pi, step)
                     loader.set_description("Loss %.04f at step %d" % (loss, step))
 
             save_path = os.path.join(pt_dir, '%s_%s_tier%d_%03d.pt'

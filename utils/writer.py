@@ -9,8 +9,11 @@ class MyWriter(SummaryWriter):
         super(MyWriter, self).__init__(logdir)
         self.hp = hp
 
-    def log_training(self, train_loss, step):
+    def log_training(self, train_loss, mu, std, pi, step):
         self.add_scalar('train_loss', train_loss, step)
+        self.add_histogram('mu', mu, step)
+        self.add_histogram('std', std, step)
+        self.add_histogram('pi', pi, step)
 
     def log_validation(self, test_loss, source, target, result, step):
         self.add_scalar('test_loss', test_loss, step)
