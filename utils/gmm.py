@@ -1,10 +1,10 @@
 import torch
 
 def get_pi_indices(pi):
-    cumsum = torch.cumsum(pi, dim=3)
-    rand = torch.rand(pi.shape[:-1] + (1,)).cuda()
+    cumsum = torch.cumsum(pi.cpu(), dim=3)
+    rand = torch.rand(pi.shape[:-1] + (1,))
     indices = pi.shape[-1] - (cumsum < rand).sum(dim=3)
-    return indices
+    return indices.detach().numpy()
 
 def sample_gmm(mu, std, pi):
     indices = get_pi_indices(pi)
