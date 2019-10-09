@@ -5,7 +5,7 @@ model:
   gmm: 10
 ---
 data:
-  path: ''
+  path: 'Blizzard/'
 ---
 audio:
   sr: 22050
@@ -20,10 +20,9 @@ audio:
 ---
 train:
   num_workers: 32
-  optimizer: 'rmsprop'
-  rmsprop:
+  optimizer: 'SGD'
+  sgd:
     lr: 0.0001
-    momentum: 0.9
 ---
 log:
   summary_interval: 1
