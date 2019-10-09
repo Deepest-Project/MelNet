@@ -13,7 +13,7 @@ class UpsampleRNN(nn.Module):
             input_size=self.num_hidden, hidden_size=self.num_hidden, batch_first=True, bidirectional=True
         )
 
-        self.W = nn.Linear(4 * self.num_hidden, num_hidden)
+        self.W = nn.Linear(4 * self.num_hidden, self.num_hidden)
 
     def forward(self, inp):
         B, M, T, D = inp.size()

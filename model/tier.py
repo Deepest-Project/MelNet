@@ -4,6 +4,7 @@ import torch.nn as nn
 import torch.nn.functional as F
 
 from .rnn import DelayedRNN
+from .upsample import UpsampleRNN
 
 
 class Tier(nn.Module):
@@ -13,13 +14,18 @@ class Tier(nn.Module):
         self.hp = hp
         self.tierN = tierN
 
-        self.W_t_0 = nn.Linear(1, num_hidden)
-        self.W_f_0 = nn.Linear(1, num_hidden)
-        self.W_c_0 = nn.Linear(freq, num_hidden)
-
-        self.layers = nn.ModuleList([
-            DelayedRNN(hp, tierN) for _ in range(layers)
-        ])
+        if(tierN == 1):
+            self.W_t_0 = nn.Linear(1, num_hidden)
+            self.W_f_0 = nn.Linear(1, num_hidden)
+            self.W_c_0 = nn.Linear(freq, num_hidden)
+            self.layers = nn.ModuleList([
+                DelayedRNN(hp) for _ in range(layers)
+            ])
+        else:
+            self.W_t = nn.Linear(1, num_hidden)
+            self.layers = nn.ModuleList([
+                UpsampleRNN(hp) for _ in range(layers)
+            ])
 
         # Gaussian Mixture Model: eq. (2)
         self.K = hp.model.gmm
@@ -35,16 +41,15 @@ class Tier(nn.Module):
             h_t = self.W_t_0(F.pad(x, [1, -1]).unsqueeze(-1))
             h_f = self.W_f_0(F.pad(x, [0, 0, 1, -1]).unsqueeze(-1))
             h_c = self.W_c_0(F.pad(x, [1, -1]).transpose(1, 2))
+            for layer in self.layers:
+                h_t, h_f, h_c = layer(h_t, h_f, h_c)
+
+            # h_t, h_f: [B, M, T, D] / D=num_hidden
+            # h_c: [B, T, D]
         else:
-            h_t = self.W_t_0(x.unsqueeze(-1))
-            h_f = self.W_f_0(x.unsqueeze(-1))
-            h_c = self.W_c_0(x.transpose(1, 2))
-
-        # h_t, h_f: [B, M, T, D] / D=num_hidden
-        # h_c: [B, T, D]
-
-        for layer in self.layers:
-            h_t, h_f, h_c = layer(h_t, h_f, h_c)
+            h_f = self.W_t(x.unsqueeze(-1))
+            for layer in self.layers:
+                h_f = layer(h_f)
 
         theta_hat = self.W_theta(h_f)
 
