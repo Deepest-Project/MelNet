@@ -1,3 +1,17 @@
+.idea/
+
+# configuration
+config/*
+!config/voxceleb2.yaml
+!config/unblizzard.yaml
+
+# logs, checkpoints
+chkpt/
+logs/
+
+# just a temporary folder
+temp/
+
 # Byte-compiled / optimized / DLL files
 __pycache__/
 *.py[cod]
@@ -102,3 +116,9 @@ venv.bak/
 
 # mypy
 .mypy_cache/
+
+# vscode
+.vscode/
+
+#dataset
+VoxCeleb2/

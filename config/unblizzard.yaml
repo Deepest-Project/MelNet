@@ -1,0 +1,31 @@
+model:
+  tier: 6
+  layers: [12, 5, 4, 3, 2, 2]
+  hidden: 512
+  gmm: 10
+---
+data:
+  path: ''
+---
+audio:
+  sr: 22050
+  duration: 10.0
+  n_mels: 256
+  hop_length: 256
+  win_length: 1536
+  n_fft: 1536
+  num_freq: 769
+  ref_level_db: 20.0
+  min_level_db: -80.0
+---
+train:
+  num_workers: 32
+  optimizer: 'rmsprop'
+  rmsprop:
+    lr: 0.0001
+    momentum: 0.9
+---
+log:
+  summary_interval: 1
+  chkpt_dir: 'chkpt'
+  log_dir: 'logs'

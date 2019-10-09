@@ -1,0 +1,31 @@
+model:
+  tier: 5
+  layers: [16, 6, 5, 4, 3]
+  hidden: 512
+  gmm: 10
+---
+data:
+  path: 'VoxCeleb2/'
+---
+audio:
+  sr: 16000
+  duration: 6.0
+  n_mels: 180
+  hop_length: 180
+  win_length: 1080
+  n_fft: 1080
+  num_freq: 541
+  ref_level_db: 20.0
+  min_level_db: -80.0
+---
+train:
+  num_workers: 32
+  optimizer: 'rmsprop'
+  rmsprop:
+    lr: 0.0001
+    momentum: 0.9
+---
+log:
+  summary_interval: 1
+  chkpt_dir: 'chkpt'
+  log_dir: 'logs'
