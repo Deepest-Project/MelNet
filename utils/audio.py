@@ -8,28 +8,17 @@ import numpy as np
 class MelGen():
     def __init__(self, hp):
         self.hp = hp
-        self.window = torch.hann_window(window_length=hp.audio.win_length)
-        self.mel_basis = librosa.filters.mel(
-            sr=hp.audio.sr, n_fft=hp.audio.n_fft, n_mels=hp.audio.n_mels)
-        self.mel_basis = \
-            torch.from_numpy(self.mel_basis).float() # [n_mels, n_fft//2+1]
 
-    def get_magnitude(self, x):
-        x = torch.stft(x,
+    def get_normalized_mel(self, x):
+        x = librosa.feature.melspectrogram(
+            y=x,
+            sr=self.hp.audio.sr,
             n_fft=self.hp.audio.n_fft,
             hop_length=self.hp.audio.hop_length,
             win_length=self.hp.audio.win_length,
-            window=self.window)
-        mag = torch.norm(x, p=2, dim=-1)
-        return mag # [B, n_fft//2+1, T]
-
-    def get_mel(self, x):
-        mag = self.get_magnitude(x)
-        mel = torch.matmul(self.mel_basis, mag)
-        return mel # [B, n_mels, T]
-
-    def get_normalized_mel(self, x):
-        x = self.get_mel(x)
+            n_mels=self.hp.audio.n_mels
+        )
+        x = torch.from_numpy(x)
         x = self.pre_spec(x)
         return x
 

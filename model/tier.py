@@ -32,7 +32,6 @@ class Tier(nn.Module):
         self.pi_softmax = nn.Softmax(dim=3)
 
         # map output to produce GMM parameter eq. (10)
-        # temporarily don't use GMM. Instead, directly estimate value
         self.W_theta = nn.Linear(num_hidden, 30)
 
     def forward(self, x):
