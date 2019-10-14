@@ -44,7 +44,7 @@ class AudioOnlyDataset(Dataset):
             self.file_list = self.file_list[int(0.95*len(self.file_list)):]
 
         self.wavlen = int(hp.audio.sr * hp.audio.duration)
-        self.tier = 0
+        self.tier = self.args.tier
 
         self.melgen = MelGen(hp)
         self.tierutil = TierUtil(hp)
