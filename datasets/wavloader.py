@@ -39,9 +39,9 @@ class AudioOnlyDataset(Dataset):
         random.seed(123)
         random.shuffle(self.file_list)
         if train:
-            self.file_list = self.file_list[:int(0.95*len(self.file_list))]
+            self.file_list = self.file_list[:int(0.95 * len(self.file_list))]
         else:
-            self.file_list = self.file_list[int(0.95*len(self.file_list)):]
+            self.file_list = self.file_list[int(0.95 * len(self.file_list)):]
 
         self.wavlen = int(hp.audio.sr * hp.audio.duration)
         self.tier = self.args.tier

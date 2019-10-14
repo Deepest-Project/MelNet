@@ -1,6 +1,5 @@
 # based on https://github.com/keithito/tacotron/blob/master/util/audio.py
 
-import torch
 import librosa
 import numpy as np
 
@@ -18,7 +17,6 @@ class MelGen():
             win_length=self.hp.audio.win_length,
             n_mels=self.hp.audio.n_mels
         )
-        x = torch.from_numpy(x)
         x = self.pre_spec(x)
         return x
 
@@ -29,13 +27,13 @@ class MelGen():
         return self.db_to_amp(self.denormalize(x) + self.hp.audio.ref_level_db)
 
     def amp_to_db(self, x):
-        return 20.0 * torch.log10(torch.max(x, torch.tensor(1e-6)))
+        return 20.0 * np.log10(np.maximum(x, 1e-6))
 
     def normalize(self, x):
-        return torch.clamp(x / -self.hp.audio.min_level_db, -1.0, 0.0) + 1.0
+        return np.clip(x / -self.hp.audio.min_level_db, -1.0, 0.0) + 1.0
 
     def db_to_amp(self, x):
-        return torch.pow(10.0, 0.05*x)
+        return np.power(10.0, 0.05 * x)
 
     def denormalize(self, x):
-        return (torch.clamp(x, 0.0, 1.0) - 1.0) * -self.hp.audio.min_level_db
+        return (np.clip(x, 0.0, 1.0) - 1.0) * -self.hp.audio.min_level_db

@@ -79,7 +79,6 @@ def train(args, pt_dir, chkpt_path, trainloader, testloader, writer, logger, hp,
         optimizer.zero_grad()
         loss_sum = 0
         for epoch in itertools.count(init_epoch+1):
-            trainloader.tier = args.tier
             loader = tqdm(trainloader, desc='Train data loader')
             for source, target in loader:
                 mu, std, pi = model(source.cuda())
