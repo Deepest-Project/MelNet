@@ -21,19 +21,13 @@ class MelGen():
         return x
 
     def pre_spec(self, x):
-        return self.normalize(self.amp_to_db(x) - self.hp.audio.ref_level_db)
+        return self.normalize(librosa.power_to_db(x) - self.hp.audio.ref_level_db)
 
     def post_spec(self, x):
-        return self.db_to_amp(self.denormalize(x) + self.hp.audio.ref_level_db)
-
-    def amp_to_db(self, x):
-        return 20.0 * np.log10(np.maximum(x, 1e-6))
+        return librosa.db_to_power(self.denormalize(x) + self.hp.audio.ref_level_db)
 
     def normalize(self, x):
         return np.clip(x / -self.hp.audio.min_level_db, -1.0, 0.0) + 1.0
-
-    def db_to_amp(self, x):
-        return np.power(10.0, 0.05 * x)
 
     def denormalize(self, x):
         return (np.clip(x, 0.0, 1.0) - 1.0) * -self.hp.audio.min_level_db
