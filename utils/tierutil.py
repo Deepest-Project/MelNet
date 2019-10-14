@@ -40,6 +40,6 @@ class TierUtil():
 
         # return source, target
         if tierNo == 1:
-            return tiers[-1], tiers[-1].clone()
+            return tiers[-1], tiers[-1].copy()
         else:
             return tiers[-2], tiers[-1]
