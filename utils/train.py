@@ -1,31 +1,50 @@
 import os
 import math
-import tqdm
 import torch
 import torch.nn as nn
 import torch.nn.functional as F
 import itertools
 import traceback
 
-from model.model import MelNet
+from tqdm import tqdm
+
+# from model.model import MelNet
+from model.tier import Tier
 from model.loss import GMMLoss
 from .utils import get_commit_hash
 from .audio import MelGen
 from .tierutil import TierUtil
+from .constant import f_div, t_div
+from .validation import validate
 
 
 def train(args, pt_dir, chkpt_path, trainloader, testloader, writer, logger, hp, hp_str):
-    model = MelNet(hp).cuda()
+    model = Tier(
+        hp=hp,
+        freq=hp.audio.n_mels // f_div[hp.model.tier+1] * f_div[args.tier],
+        layers=hp.model.layers[args.tier-1],
+        tierN=args.tier
+    ).cuda()
     melgen = MelGen(hp)
     tierutil = TierUtil(hp)
     criterion = GMMLoss()
 
     if hp.train.optimizer == 'rmsprop':
         optimizer = torch.optim.RMSprop(
-            model.parameters(), lr=hp.train.rmsprop.lr, momentum=hp.train.rmsprop.momentum)
+            model.parameters(), 
+            lr=hp.train.rmsprop.lr, 
+            momentum=hp.train.rmsprop.momentum
+        )
     elif hp.train.optimizer == 'adam':
         optimizer = torch.optim.Adam(
-            model.parameters(), lr=hp.train.adam.lr)
+            model.parameters(), 
+            lr=hp.train.adam.lr
+        )
+    elif hp.train.optimizer == 'SGD':
+        optimizer = torch.optim.SGD(
+            model.parameters(), 
+            lr=hp.train.sgd.lr
+        )
     else:
         raise Exception("%s optimizer not supported yet" % hp.train.optimizer)
 
@@ -57,35 +76,32 @@ def train(args, pt_dir, chkpt_path, trainloader, testloader, writer, logger, hp,
     torch.backends.cudnn.benchmark = True
     try:
         model.train()
+        optimizer.zero_grad()
+        loss_sum = 0
         for epoch in itertools.count(init_epoch+1):
-            loader = tqdm.tqdm(trainloader, desc='Train data loader')
-            for audio in loader:
-                audio = audio.cuda()
-                mel = melgen.get_logmel(audio)
-                tiers = tierutil.cut_divide_tiers(mel)
-
-                # for tier in range(1, hp.model.tier+1):
-                for tierN in range(2, 3):
-                    mu, std, pi = model(tiers[tierN], tierN)
-
-                loss = criterion(tiers[tierN], mu, std, pi)
-                
-                optimizer.zero_grad()
-                loss.backward()
-                optimizer.step()
+            loader = tqdm(trainloader, desc='Train data loader')
+            for source, target in loader:
+                mu, std, pi = model(source.cuda())
+                loss = criterion(target.cuda(), mu, std, pi)
                 step += 1
+                (loss / hp.train.update_interval).backward()
+                loss_sum += loss.item() / hp.train.update_interval
+
+                if step % hp.train.update_interval == 0:
+                    optimizer.step()
+                    optimizer.zero_grad()
+                    if step % hp.log.summary_interval == 0:
+                        writer.log_training(loss_sum, mu, std, pi, step)
+                        loader.set_description("Loss %.04f at step %d" % (loss_sum, step))
+                    loss_sum = 0
 
                 loss = loss.item()
                 if loss > 1e8 or math.isnan(loss):
-                    logger.error("Loss exploded to %.02f at step %d!" % (loss, step))
+                    logger.error("Loss exploded to %.04f at step %d!" % (loss, step))
                     raise Exception("Loss exploded")
 
-                if step % hp.log.summary_interval == 0:
-                    writer.log_training(loss, step)
-                    loader.set_description("Loss %.02f at step %d" % (loss, step))
-
-            save_path = os.path.join(pt_dir, '%s_%s_%03d.pt'
-                % (args.name, githash, epoch))
+            save_path = os.path.join(pt_dir, '%s_%s_tier%d_%03d.pt'
+                % (args.name, githash, args.tier, epoch))
             torch.save({
                 'model': model.state_dict(),
                 'optimizer': optimizer.state_dict(),
@@ -96,7 +112,8 @@ def train(args, pt_dir, chkpt_path, trainloader, testloader, writer, logger, hp,
             }, save_path)
             logger.info("Saved checkpoint to: %s" % save_path)
 
-            # validate(?, ?)
+            validate(args, model, melgen, tierutil, testloader, criterion, writer, step)
+
     except Exception as e:
         logger.info("Exiting due to exception: %s" % e)
         traceback.print_exc()
