@@ -9,6 +9,7 @@ from utils.utils import read_wav_np, cut_wav
 from utils.audio import MelGen
 from utils.tierutil import TierUtil
 
+
 def create_dataloader(hp, args, train):
     if train:
         return DataLoader(dataset=AudioOnlyDataset(hp, args, True),
@@ -35,7 +36,8 @@ class AudioOnlyDataset(Dataset):
         self.melgen = MelGen(hp)
         self.tierutil = TierUtil(hp)
 
-        self.file_list = glob.glob(os.path.join(self.data, '**', '*.m4a'), recursive=True)
+        # this will search all files within hp.data.path
+        self.file_list = glob.glob(os.path.join(hp.data.path, '**', hp.data.extension), recursive=True)
         random.seed(123)
         random.shuffle(self.file_list)
         if train:

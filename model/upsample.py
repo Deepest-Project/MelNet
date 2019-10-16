@@ -1,6 +1,7 @@
 import torch
 import torch.nn as nn
 
+
 class UpsampleRNN(nn.Module):
     def __init__(self, hp):
         super(UpsampleRNN, self).__init__()

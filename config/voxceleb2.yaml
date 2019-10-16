@@ -5,7 +5,8 @@ model:
   gmm: 10
 ---
 data:
-  path: 'VoxCeleb2/'
+  path: ''
+  extension: '*.m4a'
 ---
 audio:
   sr: 16000
@@ -23,7 +24,16 @@ train:
   optimizer: 'SGD'
   sgd:
     lr: 0.0001
-  update_interval: 128
+    momentum: 0.9
+  rmsprop: # from paper
+    lr: 0.0001
+    momentum: 0.9
+  adam:
+    lr: 0.0001
+  # Gradient Accumulation
+  # you'll be specifying batch size with argument of trainer.py
+  # (update interval) * (batch size) = (paper's batch size) = 128
+  update_interval: 128 # for batch size 1.
 ---
 log:
   summary_interval: 1
