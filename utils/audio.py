@@ -1,3 +1,5 @@
+# based on https://github.com/keithito/tacotron/blob/master/util/audio.py
+
 import librosa
 import numpy as np
 
