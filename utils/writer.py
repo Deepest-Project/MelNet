@@ -1,4 +1,3 @@
-import numpy as np
 from torch.utils.tensorboard import SummaryWriter
 
 from . import plotting as plt 

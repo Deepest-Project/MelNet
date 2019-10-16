@@ -1,5 +1,3 @@
-import numpy as np
-
 from .constant import f_div, t_div
 
 
