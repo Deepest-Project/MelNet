@@ -1,5 +1,3 @@
-# MelNet
-=======
 # MelNet (WIP)
 
 Implementation of [MelNet: A Generative Model for Audio in the Frequency Domain](<https://arxiv.org/abs/1906.01083>) (Work in progress)
