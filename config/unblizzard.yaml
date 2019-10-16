@@ -6,7 +6,7 @@ model:
 ---
 data:
   path: ''
-  extension: '.wav'
+  extension: '*.wav'
 ---
 audio:
   sr: 22050

@@ -6,7 +6,7 @@ model:
 ---
 data:
   path: ''
-  extension: '.m4a'
+  extension: '*.m4a'
 ---
 audio:
   sr: 16000
