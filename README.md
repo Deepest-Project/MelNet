@@ -28,7 +28,7 @@ Implementation of [MelNet: A Generative Model for Audio in the Frequency Domain]
 
 ## Implementation authors
 
-- [Seungwon Park](<https://github.com/seungwonpark>), [Joonyoung Lee](<https://github.com/Rick-McCoy>), [Yoonhyung Lee](<https://github.com/LEEYOONHYUNG>), [Joowhan Song](<https://github.com/Joovvhan>) @ Deepest Season 6
+- [Seungwon Park](<https://github.com/seungwonpark>), [June Young Yi](<https://github.com/Rick-McCoy>), [Yoonhyung Lee](<https://github.com/LEEYOONHYUNG>), [Joowhan Song](<https://github.com/Joovvhan>) @ Deepest Season 6
 
 ## License
 
