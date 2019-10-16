@@ -19,10 +19,12 @@ from .validation import validate
 
 
 def train(args, pt_dir, chkpt_path, trainloader, testloader, writer, logger, hp, hp_str):
-    model = Tier(hp=hp,
-                freq=hp.audio.n_mels // f_div[hp.model.tier+1] * f_div[args.tier],
-                layers=hp.model.layers[args.tier-1],
-                tierN=args.tier).cuda()
+    model = Tier(
+        hp=hp,
+        freq=hp.audio.n_mels // f_div[hp.model.tier+1] * f_div[args.tier],
+        layers=hp.model.layers[args.tier-1],
+        tierN=args.tier
+    ).cuda()
     melgen = MelGen(hp)
     tierutil = TierUtil(hp)
     criterion = GMMLoss()
@@ -74,26 +76,29 @@ def train(args, pt_dir, chkpt_path, trainloader, testloader, writer, logger, hp,
     torch.backends.cudnn.benchmark = True
     try:
         model.train()
+        optimizer.zero_grad()
+        loss_sum = 0
         for epoch in itertools.count(init_epoch+1):
-            trainloader.tier = args.tier
             loader = tqdm(trainloader, desc='Train data loader')
             for source, target in loader:
                 mu, std, pi = model(source.cuda())
                 loss = criterion(target.cuda(), mu, std, pi)
-                
-                optimizer.zero_grad()
-                loss.backward()
-                optimizer.step()
                 step += 1
+                (loss / hp.train.update_interval).backward()
+                loss_sum += loss.item() / hp.train.update_interval
+
+                if step % hp.train.update_interval == 0:
+                    optimizer.step()
+                    optimizer.zero_grad()
+                    if step % hp.log.summary_interval == 0:
+                        writer.log_training(loss_sum, mu, std, pi, step)
+                        loader.set_description("Loss %.04f at step %d" % (loss_sum, step))
+                    loss_sum = 0
 
                 loss = loss.item()
                 if loss > 1e8 or math.isnan(loss):
                     logger.error("Loss exploded to %.04f at step %d!" % (loss, step))
                     raise Exception("Loss exploded")
-
-                if step % hp.log.summary_interval == 0:
-                    writer.log_training(loss, mu, std, pi, step)
-                    loader.set_description("Loss %.04f at step %d" % (loss, step))
 
             save_path = os.path.join(pt_dir, '%s_%s_tier%d_%03d.pt'
                 % (args.name, githash, args.tier, epoch))

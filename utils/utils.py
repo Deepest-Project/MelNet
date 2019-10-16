@@ -13,7 +13,7 @@ def read_wav_np(wavpath):
     file_format = wavpath.split('.')[-1]
     audio = AudioSegment.from_file(wavpath, file_format)
     data = audio.raw_data
-    wav = np.frombuffer(data, dtype=np.uint8)
+    wav = np.frombuffer(data, dtype=np.int16)
     
     if len(wav.shape) == 2:
         wav = wav[:, 0]
@@ -37,6 +37,6 @@ def cut_wav(L, wav):
                 'constant', constant_values=0.0)
     else:
         start = random.randint(0, samples - L)
-        wav = wav[start:start+L]
+        wav = wav[start:start + L]
 
     return wav

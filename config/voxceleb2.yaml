@@ -23,6 +23,7 @@ train:
   optimizer: 'SGD'
   sgd:
     lr: 0.0001
+  update_interval: 128
 ---
 log:
   summary_interval: 1
