@@ -1,0 +1,8 @@
+librosa
+matplotlib
+numpy
+pydub
+pyyaml
+tensorboard
+torch==1.2.0
+tqdm
