@@ -1,4 +1,3 @@
-import numpy as np
 import torch
 import torch.nn as nn
 import torch.nn.functional as F
@@ -32,7 +31,7 @@ class Tier(nn.Module):
         self.pi_softmax = nn.Softmax(dim=3)
 
         # map output to produce GMM parameter eq. (10)
-        self.W_theta = nn.Linear(num_hidden, 30)
+        self.W_theta = nn.Linear(num_hidden, 3*self.K)
 
     def forward(self, x):
         # x: [B, M, T] / B=batch, M=mel, T=time

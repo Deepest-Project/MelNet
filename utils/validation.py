@@ -5,6 +5,7 @@ import torch.nn.functional as F
 
 from .gmm import sample_gmm
 
+
 def validate(args, model, melgen, tierutil, testloader, criterion, writer, step):
     model.eval()
     torch.backends.cudnn.benchmark = False
