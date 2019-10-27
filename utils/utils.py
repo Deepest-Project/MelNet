@@ -3,6 +3,10 @@ import numpy as np
 import subprocess
 import audiosegment
 
+def get_commit_hash():
+    message = subprocess.check_output(["git", "rev-parse", "--short", "HEAD"])
+    return message.strip().decode('utf-8')
+
 def read_wav_np(wavpath):
     file_format = wavpath.split('.')[-1]
     audio = audiosegment.from_file(wavpath).resample(sample_rate_Hz=22050)
@@ -20,8 +24,8 @@ def read_wav_np(wavpath):
         wav = (wav - 128) / 128.0
     
     wav = wav.astype(np.float32)
-    wav= norm_wav(wav)
-    wav = trim_wav(wav)
+    # wav= norm_wav(wav)
+    # wav = trim_wav(wav)
     return wav
 
 

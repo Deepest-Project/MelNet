@@ -52,7 +52,9 @@ class Tier(nn.Module):
         theta_hat = self.W_theta(h_f)
 
         mu = theta_hat[..., :self.K] # eq. (3)
-        std = torch.exp(theta_hat[..., self.K:2*self.K]) # eq. (4)
-        pi = self.pi_softmax(theta_hat[..., 2*self.K:]) # eq. (5)
+        # std = torch.exp(theta_hat[..., self.K:2*self.K]) # eq. (4)
+        # pi = self.pi_softmax(theta_hat[..., 2*self.K:]) # eq. (5)
+        std = theta_hat[..., self.K:2*self.K]
+        pi = theta_hat[..., 2*self.K:]
 
         return mu, std, pi

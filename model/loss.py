@@ -1,4 +1,3 @@
-import numpy as np
 import torch
 import torch.nn as nn
 import torch.nn.functional as F
@@ -10,7 +9,7 @@ class GMMLoss(nn.Module):
 
     def forward(self, x, mu, std, pi):
         x = x.unsqueeze(-1)
-        distrib = torch.exp(-((x - mu) / std) ** 2 / 2) / (std * np.sqrt(2 * np.pi))
-        distrib = torch.sum(pi * distrib, dim=3)
-        loss = -torch.log(distrib).mean() # NLL
+        log_prob = torch.distributions.Normal(loc=mu, scale=std.exp()).log_prob(x)
+        log_distrib = log_prob + F.log_softmax(pi, dim=-1)
+        loss = -torch.logsumexp(log_distrib, dim=-1).mean()
         return loss
