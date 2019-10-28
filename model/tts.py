@@ -17,7 +17,7 @@ class Attention(nn.Module):
     def attention(self, h_i, memory, ksi):
         phi_hat = self.W_g(h_i)
 
-        ksi = ksi+F.softplus(phi_hat[:, :self.M])/3
+        ksi = ksi+torch.exp(phi_hat[:, :self.M])/5
         beta = torch.exp( phi_hat[:, self.M:2*self.M] )
         alpha = F.softmax(phi_hat[:, 2*self.M:3*self.M], dim=-1)
         
@@ -108,13 +108,19 @@ class TTS(nn.Module):
         # x: [B, M, T] / B=batch, M=mel, T=time
         h_t = self.W_t_0(F.pad(x, [1, -1]).unsqueeze(-1))
         h_f = self.W_f_0(F.pad(x, [0, 0, 1, -1]).unsqueeze(-1))
-        h_c, alignment, termination = self.attention(self.W_c_0(F.pad(x, [1, -1]).transpose(1, 2)), 
-                                                     memory,
-                                                     input_lengths)
+        h_c = self.W_c_0(F.pad(x, [1, -1]).transpose(1, 2))
         
         # h_t, h_f: [B, M, T, D] / h_c: [B, T, D]
-        for layer in self.layers:
-            h_t, h_f, h_c = layer(h_t, h_f, h_c)
+        for i, layer in enumerate(self.layers):
+            if i!=(len(self.layers)//2):
+                h_t, h_f, h_c = layer(h_t, h_f, h_c)
+                
+            else:
+                h_c, alignment, termination = self.attention(h_c,
+                                                             memory,
+                                                             input_lengths)
+                
+                h_t, h_f, _ = layer(h_t, h_f, h_c, attention=True)
 
         theta_hat = self.W_theta(h_f)
 
