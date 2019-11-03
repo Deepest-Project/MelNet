@@ -9,7 +9,7 @@ def get_pi_indices(pi):
 
 def sample_gmm(mu, std, pi):
     std = std.exp()
-    pi = pi.softmax(dim=3)
+    pi = pi.softmax(dim=-1)
     indices = get_pi_indices(pi)
     mu = mu.reshape(-1, mu.shape[-1])
     mu = mu[np.arange(mu.shape[0]), indices].reshape(std.shape[:-1])
