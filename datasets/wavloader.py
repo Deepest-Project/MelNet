@@ -8,27 +8,27 @@ from torch.utils.data import Dataset, DataLoader
 from utils.utils import *
 from utils.audio import MelGen
 from utils.tierutil import TierUtil
-from text import text_to_sequence
+# from text import text_to_sequence
 
 
 
 def create_dataloader(hp, args, train):
     if train:
-        return DataLoader(dataset=AudioTextDataset(hp, args, True),
+        return DataLoader(dataset=AudioOnlyDataset(hp, args, True),
                           batch_size=args.batch_size,
                           shuffle=True,
                           num_workers=hp.train.num_workers,
                           pin_memory=True,
-                          drop_last=True,
-                          collate_fn=TextCollate())
+                          drop_last=True)
+                        #   collate_fn=TextCollate())
     else:
-        return DataLoader(dataset=AudioTextDataset(hp, args, False),
+        return DataLoader(dataset=AudioOnlyDataset(hp, args, False),
                           batch_size=args.batch_size,
                           shuffle=False,
                           num_workers=1,
                           pin_memory=True,
-                          drop_last=True,
-                          collate_fn=TextCollate())
+                          drop_last=True)
+                        #   collate_fn=TextCollate())
 
 
 
@@ -43,11 +43,12 @@ class AudioOnlyDataset(Dataset):
 
         # this will search all files within hp.data.path
         self.file_list = []
-        for i, f in enumerate(glob.glob(os.path.join(hp.data.path, '**', hp.data.extension), recursive=True)):
-            wav = read_wav_np(f)
-            duraton = (len(wav)/hp.audio.sr)
-            if duraton < hp.audio.duration:
-                self.file_list.append(f)
+        # for i, f in enumerate(glob.glob(os.path.join(hp.data.path, '**', hp.data.extension), recursive=True)):
+        #     wav = read_wav_np(f)
+        #     duraton = (len(wav)/hp.audio.sr)
+        #     if duraton < hp.audio.duration:
+        #         self.file_list.append(f)
+        self.file_list = glob.glob(os.path.join(hp.data.path, '**', hp.data.extension), recursive=True)
         
         random.seed(123)
         random.shuffle(self.file_list)
