@@ -2,6 +2,7 @@ import os
 import time
 import logging
 import argparse
+import platform
 
 from utils.train import train
 from utils.hparams import HParam
@@ -26,6 +27,8 @@ if __name__ == '__main__':
     hp = HParam(args.config)
     with open(args.config, 'r') as f:
         hp_str = ''.join(f.readlines())
+    if platform.system() == 'Windows':
+        hp.train.num_workers = 0
 
     pt_dir = os.path.join(hp.log.chkpt_dir, args.name)
     log_dir = os.path.join(hp.log.log_dir, args.name)
