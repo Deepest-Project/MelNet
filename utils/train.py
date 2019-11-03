@@ -22,7 +22,8 @@ def train(args, pt_dir, chkpt_path, trainloader, testloader, writer, logger, hp,
         freq=hp.audio.n_mels // f_div[hp.model.tier+1] * f_div[args.tier],
         layers=hp.model.layers[args.tier-1],
         tierN=args.tier
-    ).cuda()
+    )
+    model = nn.DataParallel(model).cuda()
     melgen = MelGen(hp)
     tierutil = TierUtil(hp)
     criterion = GMMLoss()
