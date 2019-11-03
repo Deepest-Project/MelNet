@@ -16,7 +16,13 @@ class UpsampleRNN(nn.Module):
 
         self.W = nn.Linear(4 * self.num_hidden, self.num_hidden)
 
+    def flatten_parameters(self):
+        self.rnn_x.flatten_parameters()
+        self.rnn_y.flatten_parameters()
+
     def forward(self, inp):
+        self.flatten_parameters()
+        
         B, M, T, D = inp.size()
 
         x, _ = self.rnn_x(inp.view(-1, T, D))
