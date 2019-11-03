@@ -31,9 +31,9 @@ class DelayedRNN(nn.Module):
         self.c_RNN.flatten_parameters()
         self.f_delay_RNN.flatten_parameters()
 
-    def forward(self, input_h_t, input_h_f, input_h_c=0.0):
+    def forward(self, input_h_t, input_h_f, input_h_c=0.0, attention=False):
+      
         self.flatten_rnn()
-
         # input_h_t, input_h_f: [B, M, T, D]
         # input_h_c: [B, T, D]
         B, M, T, D = input_h_t.size()
@@ -55,7 +55,11 @@ class DelayedRNN(nn.Module):
         output_h_t = input_h_t + self.W_t(h_t_concat) # residual connection, eq. (6)
 
         ####### centralized stack #######
-        h_c_temp, _ = self.c_RNN(input_h_c)
+        if attention==False:
+            h_c_temp, _ = self.c_RNN(input_h_c)
+        else:
+            h_c_temp = input_h_c
+            
         output_h_c = input_h_c + self.W_c(h_c_temp) # residual connection, eq. (11)
         h_c_expanded = output_h_c.unsqueeze(1)
 

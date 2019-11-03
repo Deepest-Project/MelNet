@@ -13,44 +13,37 @@ class Attention(nn.Module):
         self.M = hp.model.gmm
         self.rnn_cell = nn.LSTMCell(input_size=2*hp.model.hidden, hidden_size=hp.model.hidden)
         self.W_g = nn.Linear(hp.model.hidden, 3*self.M)
-        self.ksi_hat_cum=None
         
-    def attention(self, h_i, memory):
+    def attention(self, h_i, memory, ksi):
         phi_hat = self.W_g(h_i)
-        ksi_hat = torch.exp(phi_hat[:, :self.M])
+
+        ksi = ksi+torch.exp(phi_hat[:, :self.M])/5
+        beta = torch.exp( phi_hat[:, self.M:2*self.M] )
+        alpha = F.softmax(phi_hat[:, 2*self.M:3*self.M], dim=-1)
         
-        '''
-        if self.ksi_hat_cum is None:
-            ksi_hat = torch.exp(phi_hat[:, :self.M])
-            self.ksi_hat_cum = torch.exp(phi_hat[:, :self.M])
-        else:
-            ksi_hat = self.ksi_hat_cum + torch.exp(phi_hat[:, :self.M])
-            self.ksi_hat_cum = self.ksi_hat_cum + torch.exp(phi_hat[:, :self.M])
-        '''
-            
-        self.beta_hat = torch.exp( phi_hat[:, self.M:2*self.M] )
-        self.alpha_hat = F.softmax(phi_hat[:, 2*self.M:3*self.M], dim=-1)
+        u = memory.new_tensor( range(memory.size(1)), dtype=torch.float )
+        u_R = u + 0.5
+        u_L = u - 0.5
         
-        self.u = memory.new_tensor( range(memory.size(1)), dtype=torch.float )
-        self.u_R = self.u + 0.5
-        self.u_L = self.u - 0.5
+        term1 = torch.sum(alpha.unsqueeze(-1)*
+                          torch.reciprocal(1 + torch.exp((ksi.unsqueeze(-1) - u_R)
+                                                         / beta.unsqueeze(-1))), dim=1)
         
-        term1 = torch.sum(self.alpha_hat.unsqueeze(-1)*
-                          torch.reciprocal(1 + torch.exp((ksi_hat.unsqueeze(-1) - self.u_R) / self.beta_hat.unsqueeze(-1))), dim=1)
-        
-        term2 = torch.sum(self.alpha_hat.unsqueeze(-1)*
-                          torch.reciprocal(1 + torch.exp((ksi_hat.unsqueeze(-1) - self.u_L) / self.beta_hat.unsqueeze(-1))), dim=1)
+        term2 = torch.sum(alpha.unsqueeze(-1)*
+                          torch.reciprocal(1 + torch.exp((ksi.unsqueeze(-1) - u_L)
+                                                         / beta.unsqueeze(-1))), dim=1)
         
         weights = (term1-term2).unsqueeze(1)
         
         
         context = torch.bmm(weights, memory)
         
-        termination = 1 - torch.sum(self.alpha_hat.unsqueeze(-1)*
-                                    torch.reciprocal(1 + torch.exp((ksi_hat.unsqueeze(-1) - self.u_R) / self.beta_hat.unsqueeze(-1))),
+        termination = 1 - torch.sum(alpha.unsqueeze(-1)*
+                                    torch.reciprocal(1 + torch.exp((ksi.unsqueeze(-1) - u_R)
+                                                                   / beta.unsqueeze(-1))),
                                     dim=1)
 
-        return context, weights, termination # (B, 1, D), (B, 1, T), (B, T)
+        return context, weights, termination, ksi # (B, 1, D), (B, 1, T), (B, T)
 
     
     
@@ -59,13 +52,13 @@ class Attention(nn.Module):
         
         context = input_h_c.new_zeros(B, D)
         h_i, c_i  = input_h_c.new_zeros(B, D), input_h_c.new_zeros(B, D)
+        ksi = input_h_c.new_zeros(B, self.M)
         
         contexts, weights = [], []
-        
         for i in range(T):
             x = torch.cat([input_h_c[:, i], context.squeeze(1)], dim=-1)
             h_i, c_i = self.rnn_cell(x, (h_i, c_i))
-            context, weight, termination = self.attention(h_i, memory)
+            context, weight, termination, ksi = self.attention(h_i, memory, ksi)
             
             contexts.append(context)
             weights.append(weight)
@@ -100,8 +93,9 @@ class TTS(nn.Module):
         
         self.TextEncoder = nn.Sequential(nn.Embedding(len(symbols), hp.model.hidden),
                                          nn.LSTM(input_size=hp.model.hidden,
-                                                 hidden_size=hp.model.hidden, 
-                                                 batch_first=True)
+                                                 hidden_size=hp.model.hidden//2, 
+                                                 batch_first=True,
+                                                 bidirectional=True)
                                         )
         
         self.attention = Attention(hp)
@@ -114,13 +108,19 @@ class TTS(nn.Module):
         # x: [B, M, T] / B=batch, M=mel, T=time
         h_t = self.W_t_0(F.pad(x, [1, -1]).unsqueeze(-1))
         h_f = self.W_f_0(F.pad(x, [0, 0, 1, -1]).unsqueeze(-1))
-        h_c, alignment, termination = self.attention(self.W_c_0(F.pad(x, [1, -1]).transpose(1, 2)), 
-                                                     memory, 
-                                                     input_lengths)
+        h_c = self.W_c_0(F.pad(x, [1, -1]).transpose(1, 2))
         
         # h_t, h_f: [B, M, T, D] / h_c: [B, T, D]
-        for layer in self.layers:
-            h_t, h_f, h_c = layer(h_t, h_f, h_c)
+        for i, layer in enumerate(self.layers):
+            if i!=(len(self.layers)//2):
+                h_t, h_f, h_c = layer(h_t, h_f, h_c)
+                
+            else:
+                h_c, alignment, termination = self.attention(h_c,
+                                                             memory,
+                                                             input_lengths)
+                
+                h_t, h_f, _ = layer(h_t, h_f, h_c, attention=True)
 
         theta_hat = self.W_theta(h_f)
 
@@ -149,9 +149,9 @@ class TTS(nn.Module):
         for i in range(x.size(-1)):
             h_t = self.W_t_0(x_t.unsqueeze(-1))
             h_f = self.W_f_0(x_f.unsqueeze(-1))
-            h_c, alignment, termination = self.attention(self.W_c_0(F.pad(x, [1, -1]).transpose(1, 2)), 
-                                                       memory, 
-                                                       input_lengths)
+            h_c, alignment, termination = self.attention(self.W_c_0(F.pad(x, [1, -1]).transpose(1, 2)),
+                                                         memory,
+                                                         input_lengths)
 
             for layer in self.layers:
                 h_t, h_f, h_c = layer(h_t, h_f, h_c)
