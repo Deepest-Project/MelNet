@@ -8,7 +8,7 @@ from torch.utils.data import Dataset, DataLoader
 from utils.utils import *
 from utils.audio import MelGen
 from utils.tierutil import TierUtil
-# from text import text_to_sequence
+from text import text_to_sequence
 
 
 
@@ -25,7 +25,7 @@ def create_dataloader(hp, args, train):
         return DataLoader(dataset=AudioOnlyDataset(hp, args, False),
                           batch_size=args.batch_size,
                           shuffle=False,
-                          num_workers=1,
+                          num_workers=hp.train.num_workers,
                           pin_memory=True,
                           drop_last=True)
                         #   collate_fn=TextCollate())

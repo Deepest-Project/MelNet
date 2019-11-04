@@ -14,8 +14,8 @@ def validate(args, model, melgen, tierutil, testloader, criterion, writer, step)
     loader = tqdm.tqdm(testloader, desc='Testing is in progress')
     with torch.no_grad():
         for source, target in loader:
-            mu, std, pi = model(source.cuda())
-            loss = criterion(target.cuda(), mu, std, pi)
+            mu, std, pi = model(source.cuda(non_blocking=True))
+            loss = criterion(target.cuda(non_blocking=True), mu, std, pi)
             test_loss.append(loss.item())
 
         test_loss = sum(test_loss) / len(test_loss)

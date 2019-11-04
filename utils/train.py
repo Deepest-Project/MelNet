@@ -80,8 +80,8 @@ def train(args, pt_dir, chkpt_path, trainloader, testloader, writer, logger, hp,
         for epoch in itertools.count(init_epoch+1):
             loader = tqdm.tqdm(trainloader, desc='Train data loader')
             for source, target in loader:
-                mu, std, pi = model(source.cuda())
-                loss = criterion(target.cuda(), mu, std, pi)
+                mu, std, pi = model(source.cuda(non_blocking=True))
+                loss = criterion(target.cuda(non_blocking=True), mu, std, pi)
                 step += 1
                 (loss / hp.train.update_interval).backward()
                 loss_sum += loss.item() / hp.train.update_interval
