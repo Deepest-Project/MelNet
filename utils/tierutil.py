@@ -41,3 +41,25 @@ class TierUtil():
             return tiers[-1], tiers[-1].copy()
         else:
             return tiers[-2], tiers[-1]
+
+    def interleave(self, x, y, tier):
+        '''
+            implements eq. (25)
+            x: x^{<g}
+            y: x^{g}
+            tier: g+1
+        '''
+        assert x.size() == y.size(), \
+            'two inputs for interleave should be identical: got %s, %s' % (x.size(), y.size())
+
+        B, T, M = x.size(0)
+        if tier % 2 == 0: # along time axis
+            temp = torch.zeros((B, 2*T, M))
+            temp[:, 0::2, :] = x
+            temp[:, 1::2, :] = y
+        else:
+            temp = torch.zeros((B, T, 2*M))
+            temp[:, :, 0::2] = x
+            temp[:, :, 1::2] = y
+
+        return temp
