@@ -61,5 +61,5 @@ class Tier(nn.Module):
         return mu, std, pi
 
     def sample(self, x):
-        mu, std, pi = self.forwardd(x, train=False)
+        mu, std, pi = self.forward(x, train=False)
         return sample_gmm(mu, std, pi)

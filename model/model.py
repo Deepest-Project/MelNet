@@ -1,3 +1,4 @@
+import tqdm
 import torch
 import torch.nn as nn
 import torch.nn.functional as F
@@ -39,9 +40,10 @@ class MelNet(nn.Module):
 
         ## Tier 1 ##
         print('Tier 1')
-        for t in range(x.size(1)):
+        for t in tqdm.tqdm(range(x.size(1))):
             for m in range(x.size(2)):
-                temp = self.tiers[tier].sample(x)
+                torch.cuda.synchronize()
+                temp = self.tiers[1].sample(x)
                 x[:, t, m] = temp[:, t, m]
                 del temp
 
