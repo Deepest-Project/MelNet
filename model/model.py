@@ -1,6 +1,7 @@
 import torch
 import torch.nn as nn
 import torch.nn.functional as F
+from collections import OrderedDict
 
 from .tier import Tier
 from .loss import GMMLoss
@@ -28,15 +29,13 @@ class MelNet(nn.Module):
                 tierN=tier)
             for tier in range(1, hp.model.tier+1)])
 
-        self.load_tiers()
-
     def forward(self, x, tier_num):
         assert tier_num > 0, 'tier_num should be larger than 0, got %d' % tier_num
 
         return self.tiers[tier_num](x)
 
     def unconditional_sample(self):
-        zeros = torch.zeros(1, self.n_mels//self.f_div, self.args.timestep//self.t_div)
+        zeros = torch.zeros(1, self.n_mels//self.f_div, self.args.timestep//self.t_div).cuda()
 
         x = self.tiers[1].sample(zeros)
         for tier in range(2, self.hp.model.tier+1):
@@ -53,7 +52,8 @@ class MelNet(nn.Module):
 
             if self.hp != hp:
                 print('Warning: hp different in file %s' % chkpt_path)
-
+            
+            checkpoint['model'] = OrderedDict({name[7:]: value for name, value in checkpoint['model'].items()})
             self.tiers[idx+1].load_state_dict(checkpoint['model'])
 
             del checkpoint

@@ -15,4 +15,4 @@ def sample_gmm(mu, std, pi):
     mu = mu[np.arange(mu.shape[0]), indices].reshape(std.shape[:-1])
     std = std.reshape(-1, std.shape[-1])
     std = std[np.arange(std.shape[0]), indices].reshape(mu.shape)
-    return torch.normal(mu, std).reshape_as(mu).clamp(0.0, 1.0)
+    return torch.normal(mu, std).reshape_as(mu).clamp(0.0, 1.0).to(mu.device)

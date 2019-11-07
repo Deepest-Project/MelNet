@@ -1,3 +1,5 @@
+import torch
+
 from .constant import f_div, t_div
 
 
@@ -52,13 +54,13 @@ class TierUtil():
         assert x.size() == y.size(), \
             'two inputs for interleave should be identical: got %s, %s' % (x.size(), y.size())
 
-        B, T, M = x.size(0)
+        B, T, M = x.size()
         if tier % 2 == 0: # along time axis
-            temp = torch.zeros((B, 2*T, M))
+            temp = torch.zeros((B, 2*T, M)).to(x.device)
             temp[:, 0::2, :] = x
             temp[:, 1::2, :] = y
         else:
-            temp = torch.zeros((B, T, 2*M))
+            temp = torch.zeros((B, T, 2*M)).to(x.device)
             temp[:, :, 0::2] = x
             temp[:, :, 1::2] = y
 

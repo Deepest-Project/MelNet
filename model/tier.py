@@ -2,7 +2,7 @@ import torch
 import torch.nn as nn
 import torch.nn.functional as F
 
-from .gmm import sample_gmm
+from utils.gmm import sample_gmm
 from .rnn import DelayedRNN
 from .upsample import UpsampleRNN
 
@@ -62,4 +62,5 @@ class Tier(nn.Module):
 
     def sample(self, x):
         mu, std, pi = self.forward(x)
-        # TODO
+        return sample_gmm(mu, std, pi)
+

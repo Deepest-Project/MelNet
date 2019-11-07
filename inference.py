@@ -1,6 +1,7 @@
 import os
 import glob
 import argparse
+import torch
 
 from utils.constant import t_div
 from utils.hparams import HParam
@@ -23,7 +24,8 @@ if __name__ == '__main__':
     assert args.timestep % t_div[hp.model.tier] == 0, \
         "timestep should be divisible by %d, got %d" % (t_div[hp.model.tier], args.timestep)
 
-    model = MelNet(hp, args, infer_hp)
+    model = MelNet(hp, args, infer_hp).cuda()
+    model.load_tiers()
     model.eval()
 
     with torch.no_grad():
@@ -31,3 +33,5 @@ if __name__ == '__main__':
 
     print(x)
     print(x.shape)
+    torch.save(x, 'result.pt')
+
