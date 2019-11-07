@@ -35,10 +35,19 @@ class MelNet(nn.Module):
         return self.tiers[tier_num](x)
 
     def unconditional_sample(self):
-        zeros = torch.zeros(1, self.n_mels//self.f_div, self.args.timestep//self.t_div).cuda()
+        x = torch.zeros(1, self.n_mels//self.f_div, self.args.timestep//self.t_div).cuda()
 
-        x = self.tiers[1].sample(zeros)
+        ## Tier 1 ##
+        print('Tier 1')
+        for t in range(x.size(1)):
+            for m in range(x.size(2)):
+                temp = self.tiers[tier].sample(x)
+                x[:, t, m] = temp[:, t, m]
+                del temp
+
+        ## Tier 2~N ##
         for tier in range(2, self.hp.model.tier+1):
+            print('Tier %d' % tier)
             temp = self.tiers[tier].sample(x)
             x = self.tierutil.interleave(x, temp, tier+1)
             del temp

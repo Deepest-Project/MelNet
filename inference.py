@@ -33,5 +33,6 @@ if __name__ == '__main__':
 
     print(x)
     print(x.shape)
-    torch.save(x, 'result.pt')
+    os.makedirs('temp', True)
+    torch.save(x, os.path.join('temp', 'result.pt'))
 
