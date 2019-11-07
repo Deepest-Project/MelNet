@@ -2,6 +2,7 @@ import torch
 import torch.nn as nn
 import torch.nn.functional as F
 import numpy as np
+np.set_printoptions(precision=1)
 
 from .rnn import DelayedRNN
 from text import symbols
@@ -16,8 +17,9 @@ class Attention(nn.Module):
         
     def attention(self, h_i, memory, ksi):
         phi_hat = self.W_g(h_i)
-
-        ksi = ksi+torch.exp(phi_hat[:, :self.M])/5
+        ksi = ksi+torch.exp(phi_hat[:, :self.M])
+        ksi.clamp_(max=memory.size(1)-1)
+        
         beta = torch.exp( phi_hat[:, self.M:2*self.M] )
         alpha = F.softmax(phi_hat[:, 2*self.M:3*self.M], dim=-1)
         
@@ -34,8 +36,7 @@ class Attention(nn.Module):
                                                          / beta.unsqueeze(-1))), dim=1)
         
         weights = (term1-term2).unsqueeze(1)
-        
-        
+        weights = weights / torch.sum(weights, dim=-1, keepdim=True)
         context = torch.bmm(weights, memory)
         
         termination = 1 - torch.sum(alpha.unsqueeze(-1)*
@@ -59,9 +60,9 @@ class Attention(nn.Module):
             x = torch.cat([input_h_c[:, i], context.squeeze(1)], dim=-1)
             h_i, c_i = self.rnn_cell(x, (h_i, c_i))
             context, weight, termination, ksi = self.attention(h_i, memory, ksi)
-            
             contexts.append(context)
             weights.append(weight)
+            
             
         contexts = torch.cat(contexts, dim=1)
         alignment = torch.cat(weights, dim=1)
@@ -86,7 +87,7 @@ class TTS(nn.Module):
 
         # Gaussian Mixture Model: eq. (2)
         self.K = hp.model.gmm
-        self.pi_softmax = nn.Softmax(dim=3)
+        self.pi_softmax = nn.LogSoftmax(dim=3)
 
         # map output to produce GMM parameter eq. (10)
         self.W_theta = nn.Linear(hp.model.hidden, 3*self.K)
@@ -116,11 +117,12 @@ class TTS(nn.Module):
                 h_t, h_f, h_c = layer(h_t, h_f, h_c)
                 
             else:
-                h_c, alignment, termination = self.attention(h_c,
-                                                             memory,
-                                                             input_lengths)
+                h_c_temp, alignment, termination = self.attention(h_c,
+                                                                  memory,
+                                                                  input_lengths)
                 
-                h_t, h_f, _ = layer(h_t, h_f, h_c, attention=True)
+                h_t, h_f, h_c_temp = layer(h_t, h_f, h_c_temp, attention=True)
+                h_c = h_c + h_c_temp
 
         theta_hat = self.W_theta(h_f)
 
@@ -133,7 +135,7 @@ class TTS(nn.Module):
         mask = (output_lengths.unsqueeze(-1) < idx.unsqueeze(0)).to(torch.bool) # B, T
         mask = mask.unsqueeze(1).unsqueeze(3)
         
-        mu = mu.masked_fill(mask, 0)
+        mu = torch.sigmoid(mu.masked_fill(mask, 0))
         std = std.masked_fill(mask, 1/np.sqrt(2 * np.pi))
             
         return mu, std, pi, alignment
@@ -153,8 +155,17 @@ class TTS(nn.Module):
                                                          memory,
                                                          input_lengths)
 
-            for layer in self.layers:
-                h_t, h_f, h_c = layer(h_t, h_f, h_c)
+            # h_t, h_f: [B, M, T, D] / h_c: [B, T, D]
+            for i, layer in enumerate(self.layers):
+                if i!=(len(self.layers)//2):
+                    h_t, h_f, h_c = layer(h_t, h_f, h_c)
+
+                else:
+                    h_c, alignment, termination = self.attention(h_c,
+                                                                 memory,
+                                                                 input_lengths)
+
+                    h_t, h_f, _ = layer(h_t, h_f, h_c, attention=True)
 
             theta_hat = self.W_theta(h_f)
 
