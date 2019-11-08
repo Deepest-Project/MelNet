@@ -26,8 +26,6 @@ class Attention(nn.Module):
         u = memory.new_tensor(np.arange(memory.size(1)), dtype=torch.float)
         u_R = u + 1.5
         u_L = u + 0.5
-
-        print(ksi, beta, u_R)
         
         term1 = torch.sum(
             alpha.unsqueeze(-1) * torch.reciprocal(
