@@ -1,13 +1,15 @@
 import os
 import math
-import tqdm
 import torch
 import torch.nn as nn
 import torch.nn.functional as F
 import itertools
 import traceback
 
+from tqdm import tqdm
+
 from model.tier import Tier
+from model.tts import TTS
 from model.loss import GMMLoss
 from .utils import get_commit_hash
 from .audio import MelGen
@@ -17,12 +19,19 @@ from .validation import validate
 
 
 def train(args, pt_dir, chkpt_path, trainloader, testloader, writer, logger, hp, hp_str):
-    model = Tier(
-        hp=hp,
-        freq=hp.audio.n_mels // f_div[hp.model.tier+1] * f_div[args.tier],
-        layers=hp.model.layers[args.tier-1],
-        tierN=args.tier
-    )
+    if args.tts:
+        model = TTS(
+            hp=hp,
+            freq=hp.audio.n_mels // f_div[hp.model.tier+1] * f_div[args.tier],
+            layers=hp.model.layers[args.tier-1]
+        )
+    else:
+        model = Tier(
+            hp=hp,
+            freq=hp.audio.n_mels // f_div[hp.model.tier+1] * f_div[args.tier],
+            layers=hp.model.layers[args.tier-1],
+            tierN=args.tier
+        )
     model = nn.DataParallel(model).cuda()
     melgen = MelGen(hp)
     tierutil = TierUtil(hp)
@@ -78,10 +87,17 @@ def train(args, pt_dir, chkpt_path, trainloader, testloader, writer, logger, hp,
         optimizer.zero_grad()
         loss_sum = 0
         for epoch in itertools.count(init_epoch+1):
-            loader = tqdm.tqdm(trainloader, desc='Train data loader')
-            for source, target in loader:
-                mu, std, pi = model(source.cuda())
-                loss = criterion(target.cuda(), mu, std, pi)
+            loader = tqdm(trainloader, desc='Train data loader', dynamic_ncols=True)
+            for input_tuple in loader:
+                if args.tts:
+                    seq, input_lengths, source, target = input_tuple
+                    mu, std, pi, alignment = model(source.cuda(non_blocking=True),
+                                                    seq.cuda(non_blocking=True),
+                                                    input_lengths.cuda(non_blocking=True))
+                else:
+                    source, target = input_tuple
+                    mu, std, pi = model(source.cuda(non_blocking=True))
+                loss = criterion(target.cuda(non_blocking=True), mu, std, pi)
                 step += 1
                 (loss / hp.train.update_interval).backward()
                 loss_sum += loss.item() / hp.train.update_interval

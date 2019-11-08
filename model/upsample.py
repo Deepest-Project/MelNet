@@ -7,10 +7,10 @@ class UpsampleRNN(nn.Module):
         super(UpsampleRNN, self).__init__()
         self.num_hidden = hp.model.hidden
 
-        self.rnn_x = nn.GRU(
+        self.rnn_x = nn.LSTM(
             input_size=self.num_hidden, hidden_size=self.num_hidden, batch_first=True, bidirectional=True
         )
-        self.rnn_y = nn.GRU(
+        self.rnn_y = nn.LSTM(
             input_size=self.num_hidden, hidden_size=self.num_hidden, batch_first=True, bidirectional=True
         )
 

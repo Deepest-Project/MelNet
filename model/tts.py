@@ -17,32 +17,36 @@ class Attention(nn.Module):
         
     def attention(self, h_i, memory, ksi):
         phi_hat = self.W_g(h_i)
-        ksi = ksi+torch.exp(phi_hat[:, :self.M])
-        ksi.clamp_(max=memory.size(1)-1)
-        
-        beta = torch.exp( phi_hat[:, self.M:2*self.M] )
+
+        ksi = ksi + torch.exp(phi_hat[:, :self.M])
+        beta = torch.exp(phi_hat[:, self.M:2*self.M])
         alpha = F.softmax(phi_hat[:, 2*self.M:3*self.M], dim=-1)
         
-        u = memory.new_tensor( range(memory.size(1)), dtype=torch.float )
-        u_R = u + 0.5
-        u_L = u - 0.5
+        u = memory.new_tensor(np.arange(memory.size(1)), dtype=torch.float)
+        u_R = u + 1.5
+        u_L = u + 0.5
         
-        term1 = torch.sum(alpha.unsqueeze(-1)*
-                          torch.reciprocal(1 + torch.exp((ksi.unsqueeze(-1) - u_R)
-                                                         / beta.unsqueeze(-1))), dim=1)
+        term1 = torch.sum(
+            alpha.unsqueeze(-1) * torch.sigmoid(
+                (u_R - ksi.unsqueeze(-1)) / beta.unsqueeze(-1)
+            ),
+            keepdim=True,
+            dim=1
+        )
         
-        term2 = torch.sum(alpha.unsqueeze(-1)*
-                          torch.reciprocal(1 + torch.exp((ksi.unsqueeze(-1) - u_L)
-                                                         / beta.unsqueeze(-1))), dim=1)
+        term2 = torch.sum(
+            alpha.unsqueeze(-1) * torch.sigmoid(
+                (u_L - ksi.unsqueeze(-1)) / beta.unsqueeze(-1)
+            ),
+            keepdim=True,
+            dim=1
+        )
         
-        weights = (term1-term2).unsqueeze(1)
-        weights = weights / torch.sum(weights, dim=-1, keepdim=True)
+        weights = term1 - term2
+        
         context = torch.bmm(weights, memory)
         
-        termination = 1 - torch.sum(alpha.unsqueeze(-1)*
-                                    torch.reciprocal(1 + torch.exp((ksi.unsqueeze(-1) - u_R)
-                                                                   / beta.unsqueeze(-1))),
-                                    dim=1)
+        termination = 1 - term1.squeeze(1)
 
         return context, weights, termination, ksi # (B, 1, D), (B, 1, T), (B, T)
 
@@ -73,11 +77,9 @@ class Attention(nn.Module):
 
 
 class TTS(nn.Module):
-    def __init__(self, hp, freq, layers, tierN):
+    def __init__(self, hp, freq, layers):
         super(TTS, self).__init__()
         self.hp = hp
-        assert tierN==1, 'TTS tier must be 1'
-        self.tierN = tierN
 
         self.W_t_0 = nn.Linear(1, hp.model.hidden)
         self.W_f_0 = nn.Linear(1, hp.model.hidden)
@@ -91,20 +93,26 @@ class TTS(nn.Module):
 
         # map output to produce GMM parameter eq. (10)
         self.W_theta = nn.Linear(hp.model.hidden, 3*self.K)
-        
-        self.TextEncoder = nn.Sequential(nn.Embedding(len(symbols), hp.model.hidden),
-                                         nn.LSTM(input_size=hp.model.hidden,
-                                                 hidden_size=hp.model.hidden//2, 
-                                                 batch_first=True,
-                                                 bidirectional=True)
-                                        )
+
+        self.embedding_text = nn.Embedding(len(symbols), hp.model.hidden)
+        self.text_lstm = nn.LSTM(input_size=hp.model.hidden,
+                                hidden_size=hp.model.hidden//2, 
+                                batch_first=True,
+                                bidirectional=True)
         
         self.attention = Attention(hp)
 
+    def text_encode(self, text, input_lengths):
+        total_length = text.size(1)
+        embed = self.embedding_text(text)
+        packed = nn.utils.rnn.pack_padded_sequence(embed, input_lengths, batch_first=True, enforce_sorted=False)
+        memory, _ = self.text_lstm(packed)
+        unpacked, _ = nn.utils.rnn.pad_packed_sequence(memory, batch_first=True, total_length=total_length)
+        return unpacked
         
-    def forward(self, x, text, input_lengths, output_lengths):
+    def forward(self, x, text, input_lengths):
         # Extract memory
-        memory, _ = self.TextEncoder(text)
+        memory = self.text_encode(text, input_lengths)
         
         # x: [B, M, T] / B=batch, M=mel, T=time
         h_t = self.W_t_0(F.pad(x, [1, -1]).unsqueeze(-1))
@@ -127,23 +135,15 @@ class TTS(nn.Module):
         theta_hat = self.W_theta(h_f)
 
         mu = theta_hat[:,:,:, :self.K] # eq. (3)
-        std = torch.exp(theta_hat[:,:,:, self.K:2*self.K]) # eq. (4)
-        pi = self.pi_softmax(theta_hat[:,:,:, 2*self.K:]) # eq. (5)
-
-        ### MASKING ###
-        idx = torch.arange(1, mu.size(-2)+1, device=mu.device)
-        mask = (output_lengths.unsqueeze(-1) < idx.unsqueeze(0)).to(torch.bool) # B, T
-        mask = mask.unsqueeze(1).unsqueeze(3)
-        
-        mu = torch.sigmoid(mu.masked_fill(mask, 0))
-        std = std.masked_fill(mask, 1/np.sqrt(2 * np.pi))
+        std = theta_hat[:,:,:, self.K:2*self.K] # eq. (4)
+        pi = theta_hat[:,:,:, 2*self.K:] # eq. (5)
             
         return mu, std, pi, alignment
     
     
     def sample(self, x, text, input_lengths):
         # Extract memory
-        memory = self.TextEncoder(text)
+        memory = self.text_encode(text, input_lengths)
         
         # x: [1, M, T] / B=1, M=mel, T=time
         x_t, x_f = x.clone(), x.clone()
@@ -169,10 +169,9 @@ class TTS(nn.Module):
 
             theta_hat = self.W_theta(h_f)
 
-            mu = torch.sigmoid(theta_hat[:, :, :, :self.K]) # eq. (3)
-            pi = self.pi_softmax(theta_hat[:, :, :, 2*self.K:]) # eq. (5)
-
-            mu = torch.sum(mu*pi, dim=3)
+            mu = theta_hat[:, :, :, :self.K] # eq. (3)
+            std = theta_hat[:, :, :, self.K:2*self.K] # eq. (4)
+            pi = theta_hat[:, :, :, 2*self.K:] # eq. (5)
 
             x_t[:,:,i+1] = mu[:,:,i]
             x_f[:,i+1,:] = mu[:,i,:]
