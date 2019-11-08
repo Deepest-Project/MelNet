@@ -13,8 +13,6 @@ class Attention(nn.Module):
         self.M = hp.model.gmm
         self.rnn_cell = nn.LSTMCell(input_size=2*hp.model.hidden, hidden_size=hp.model.hidden)
         self.W_g = nn.Linear(hp.model.hidden, 3*self.M)
-        with torch.no_grad():
-            self.W_g.bias[self.M:2*self.M] += np.log(10)
         
     def attention(self, h_i, memory, ksi):
         phi_hat = self.W_g(h_i)
@@ -28,16 +26,16 @@ class Attention(nn.Module):
         u_L = u + 0.5
         
         term1 = torch.sum(
-            alpha.unsqueeze(-1) * torch.reciprocal(
-                1 + torch.exp((ksi.unsqueeze(-1) - u_R) / beta.unsqueeze(-1))
+            alpha.unsqueeze(-1) * torch.sigmoid(
+                (u_R - ksi.unsqueeze(-1)) / beta.unsqueeze(-1)
             ),
             keepdim=True,
             dim=1
         )
         
         term2 = torch.sum(
-            alpha.unsqueeze(-1) * torch.reciprocal(
-                1 + torch.exp((ksi.unsqueeze(-1) - u_L) / beta.unsqueeze(-1))
+            alpha.unsqueeze(-1) * torch.sigmoid(
+                (u_L - ksi.unsqueeze(-1)) / beta.unsqueeze(-1)
             ),
             keepdim=True,
             dim=1
