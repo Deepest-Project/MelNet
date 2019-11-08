@@ -1,0 +1,41 @@
+model:
+  tier: 6
+  layers: [12, 5, 4, 3, 2, 2]
+  hidden: 512
+  gmm: 10
+---
+data:
+  path: 'KSS'
+  extension: '*.wav'
+---
+audio:
+  sr: 22050
+  duration: 5.0
+  n_mels: 256
+  hop_length: 256
+  win_length: 1536
+  n_fft: 1536
+  num_freq: 769
+  ref_level_db: 20.0
+  min_level_db: -80.0
+---
+train:
+  num_workers: 0
+  optimizer: 'adam'
+  sgd:
+    lr: 0.0001
+    momentum: 0.9
+  rmsprop: # from paper
+    lr: 0.0001
+    momentum: 0.9
+  adam:
+    lr: 0.0001
+  # Gradient Accumulation
+  # you'll be specifying batch size with argument of trainer.py
+  # (update interval) * (batch size) = (paper's batch size) = 128
+  update_interval: 1 # for batch size 1.
+---
+log:
+  summary_interval: 1
+  chkpt_dir: 'chkpt'
+  log_dir: 'logs'
