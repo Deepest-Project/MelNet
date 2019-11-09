@@ -1,10 +1,8 @@
 librosa
 matplotlib
 numpy
-audiosegment
+pydub
 pyyaml
 tensorboard
 torch==1.2.0
 tqdm
-inflect
-Unidecode

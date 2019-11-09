@@ -2,7 +2,6 @@ import torch
 import torch.nn as nn
 import torch.nn.functional as F
 import numpy as np
-np.set_printoptions(precision=1)
 
 from .rnn import DelayedRNN
 from text import symbols
@@ -64,9 +63,9 @@ class Attention(nn.Module):
             x = torch.cat([input_h_c[:, i], context.squeeze(1)], dim=-1)
             h_i, c_i = self.rnn_cell(x, (h_i, c_i))
             context, weight, termination, ksi = self.attention(h_i, memory, ksi)
+            
             contexts.append(context)
             weights.append(weight)
-            
             
         contexts = torch.cat(contexts, dim=1)
         alignment = torch.cat(weights, dim=1)
@@ -89,7 +88,7 @@ class TTS(nn.Module):
 
         # Gaussian Mixture Model: eq. (2)
         self.K = hp.model.gmm
-        self.pi_softmax = nn.LogSoftmax(dim=3)
+        self.pi_softmax = nn.Softmax(dim=3)
 
         # map output to produce GMM parameter eq. (10)
         self.W_theta = nn.Linear(hp.model.hidden, 3*self.K)
@@ -125,12 +124,11 @@ class TTS(nn.Module):
                 h_t, h_f, h_c = layer(h_t, h_f, h_c)
                 
             else:
-                h_c_temp, alignment, termination = self.attention(h_c,
-                                                                  memory,
-                                                                  input_lengths)
+                h_c, alignment, termination = self.attention(h_c,
+                                                             memory,
+                                                             input_lengths)
                 
-                h_t, h_f, h_c_temp = layer(h_t, h_f, h_c_temp, attention=True)
-                h_c = h_c + h_c_temp
+                h_t, h_f, _ = layer(h_t, h_f, h_c, attention=True)
 
         theta_hat = self.W_theta(h_f)
 
@@ -155,17 +153,8 @@ class TTS(nn.Module):
                                                          memory,
                                                          input_lengths)
 
-            # h_t, h_f: [B, M, T, D] / h_c: [B, T, D]
-            for i, layer in enumerate(self.layers):
-                if i!=(len(self.layers)//2):
-                    h_t, h_f, h_c = layer(h_t, h_f, h_c)
-
-                else:
-                    h_c, alignment, termination = self.attention(h_c,
-                                                                 memory,
-                                                                 input_lengths)
-
-                    h_t, h_f, _ = layer(h_t, h_f, h_c, attention=True)
+            for layer in self.layers:
+                h_t, h_f, h_c = layer(h_t, h_f, h_c)
 
             theta_hat = self.W_theta(h_f)
 

@@ -1,5 +1,5 @@
-import torch
 from torch.utils.tensorboard import SummaryWriter
+
 from . import plotting as plt 
 
 
@@ -9,11 +9,12 @@ class MyWriter(SummaryWriter):
         self.hp = hp
 
     def log_training(self, train_loss, mu, std, pi, step):
-        pi = torch.exp(pi)
         self.add_scalar('train_loss', train_loss, step)
         self.add_histogram('mu', mu, step)
         self.add_histogram('std', std, step)
+        self.add_histogram('std_exp', std.exp(), step)
         self.add_histogram('pi', pi, step)
+        self.add_histogram('pi_softmax', pi.softmax(dim=3), step)
 
     def log_validation(self, test_loss, source, target, result, alignment, step):
         self.add_scalar('test_loss', test_loss, step)
