@@ -91,7 +91,7 @@ def train(args, pt_dir, chkpt_path, trainloader, testloader, writer, logger, hp,
             for input_tuple in loader:
                 if args.tts:
                     seq, input_lengths, source, target = input_tuple
-                    mu, std, pi, alignment = model(source.cuda(non_blocking=True),
+                    mu, std, pi, _ = model(source.cuda(non_blocking=True),
                                                     seq.cuda(non_blocking=True),
                                                     input_lengths.cuda(non_blocking=True))
                 else:

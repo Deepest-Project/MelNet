@@ -28,8 +28,11 @@ def validate(args, model, melgen, tierutil, testloader, criterion, writer, step)
         test_loss = sum(test_loss) / len(test_loss)
         source = source[0].cpu().detach().numpy()
         target = target[0].cpu().detach().numpy()
-        alignment = alignment[0].cpu().detach().numpy()
         result = sample_gmm(mu[0], std[0], pi[0]).cpu().detach().numpy()
+        if args.tts:
+            alignment = alignment[0].cpu().detach().numpy()
+        else:
+            alignment = None
         writer.log_validation(test_loss, source, target, result, alignment, step)
 
     model.train()
