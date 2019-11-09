@@ -88,7 +88,6 @@ class TTS(nn.Module):
 
         # Gaussian Mixture Model: eq. (2)
         self.K = hp.model.gmm
-        self.pi_softmax = nn.Softmax(dim=3)
 
         # map output to produce GMM parameter eq. (10)
         self.W_theta = nn.Linear(hp.model.hidden, 3*self.K)
