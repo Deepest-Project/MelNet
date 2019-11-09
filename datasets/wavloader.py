@@ -5,7 +5,7 @@ import random
 import numpy as np
 from torch.utils.data import Dataset, DataLoader
 
-from utils.utils import *
+from utils.utils import read_wav_np, cut_wav
 from utils.audio import MelGen
 from utils.tierutil import TierUtil
 from text import text_to_sequence
@@ -13,16 +13,23 @@ from text import text_to_sequence
 def create_dataloader(hp, args, train):
     if args.tts:
         dataset = AudioTextDataset(hp, args, train)
-    else:
-        dataset = AudioOnlyDataset(hp, args, train)
-
-    return DataLoader(dataset=dataset,
+        return DataLoader(dataset=dataset,
                     batch_size=args.batch_size,
                     shuffle=train,
                     num_workers=hp.train.num_workers,
                     pin_memory=True,
                     drop_last=True,
                     collate_fn=TextCollate())
+    else:
+        dataset = AudioOnlyDataset(hp, args, train)
+        return DataLoader(dataset=dataset,
+                    batch_size=args.batch_size,
+                    shuffle=train,
+                    num_workers=hp.train.num_workers,
+                    pin_memory=True,
+                    drop_last=True)
+
+    
 
 class AudioOnlyDataset(Dataset):
     def __init__(self, hp, args, train):
