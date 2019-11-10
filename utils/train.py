@@ -6,7 +6,7 @@ import torch.nn.functional as F
 import itertools
 import traceback
 
-from tqdm import tqdm
+from tqdm.autonotebook import tqdm
 
 from model.tier import Tier
 from model.tts import TTS

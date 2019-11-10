@@ -1,7 +1,8 @@
-import tqdm
 import torch
 import torch.nn as nn
 import torch.nn.functional as F
+
+from tqdm.autonotebook import tqdm
 
 from .gmm import sample_gmm
 
@@ -11,7 +12,7 @@ def validate(args, model, melgen, tierutil, testloader, criterion, writer, step)
     torch.backends.cudnn.benchmark = False
 
     test_loss = []
-    loader = tqdm.tqdm(testloader, desc='Testing is in progress')
+    loader = tqdm(testloader, desc='Testing is in progress', dynamic_ncols=True)
     with torch.no_grad():
         for input_tuple in loader:
             if args.tts:
