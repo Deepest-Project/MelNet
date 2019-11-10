@@ -67,7 +67,7 @@ class Attention(nn.Module):
             contexts.append(context)
             weights.append(weight)
             
-        contexts = torch.cat(contexts, dim=1)
+        contexts = torch.cat(contexts, dim=1) + input_h_c
         alignment = torch.cat(weights, dim=1)
         termination = torch.gather(termination, 1, (input_lengths-1).unsqueeze(-1)) # 4
 
@@ -119,7 +119,7 @@ class TTS(nn.Module):
         
         # h_t, h_f: [B, M, T, D] / h_c: [B, T, D]
         for i, layer in enumerate(self.layers):
-            if i!=(len(self.layers)//2):
+            if i != (len(self.layers)//2):
                 h_t, h_f, h_c = layer(h_t, h_f, h_c)
                 
             else:
@@ -127,7 +127,7 @@ class TTS(nn.Module):
                                                              memory,
                                                              input_lengths)
                 
-                h_t, h_f, _ = layer(h_t, h_f, h_c, attention=True)
+                h_t, h_f, h_c = layer(h_t, h_f, h_c)
 
         theta_hat = self.W_theta(h_f)
 
