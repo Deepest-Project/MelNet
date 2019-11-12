@@ -2,10 +2,12 @@ import os
 import glob
 import argparse
 import torch
-
+import audiosegment
 import matplotlib.pyplot as plt
-from utils.plotting import plot_spectrogram_to_numpy
+import numpy as np
 
+from utils.plotting import plot_spectrogram_to_numpy
+from utils.reconstruct import Reconstruct
 from utils.constant import t_div
 from utils.hparams import HParam
 from model.model import MelNet
@@ -36,9 +38,19 @@ if __name__ == '__main__':
     model.eval()
 
     with torch.no_grad():
-        x = model.sample(args.input)
+        generated = model.sample(args.input)
 
     os.makedirs('temp', exist_ok=True)
-    torch.save(x, os.path.join('temp', args.name + '.pt'))
-    x = plot_spectrogram_to_numpy(x[0].cpu().detach().numpy())
-    plt.imsave(os.path.join('temp', args.name + '.png'), x.transpose((1, 2, 0)))
+    torch.save(generated, os.path.join('temp', args.name + '.pt'))
+    spectrogram = plot_spectrogram_to_numpy(generated[0].cpu().detach().numpy())
+    plt.imsave(os.path.join('temp', args.name + '.png'), spectrogram.transpose((1, 2, 0)))
+
+    waveform = Reconstruct(hp).inverse(generated[0]).unsqueeze(-1)
+    waveform = waveform.cpu().detach().numpy()
+    waveform *= 32768
+    waveform = waveform.astype(np.int16)
+    audio = audiosegment.from_numpy_array(
+        waveform,
+        framerate=hp.audio.sr
+    )
+    audio.export(os.path.join('temp', args.name + '.wav'), format='wav')

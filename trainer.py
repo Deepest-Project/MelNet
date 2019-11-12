@@ -34,10 +34,14 @@ if __name__ == '__main__':
 
     pt_dir = os.path.join(hp.log.chkpt_dir, args.name)
     log_dir = os.path.join(hp.log.log_dir, args.name)
+    if not os.path.isdir(hp.log.log_dir):
+        os.mkdir(hp.log.log_dir)
+    if not os.path.isdir(hp.log.chkpt_dir):
+        os.mkdir(hp.log.chkpt_dir)
     if not os.path.isdir(pt_dir):
-        os.makedirs(pt_dir)
+        os.mkdir(pt_dir)
     if not os.path.isdir(log_dir):
-        os.makedirs(log_dir)
+        os.mkdir(log_dir)
 
     logging.basicConfig(
         level=logging.INFO,
