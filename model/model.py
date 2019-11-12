@@ -20,15 +20,14 @@ class MelNet(nn.Module):
         self.hp = hp
         self.args = args
         self.infer_hp = infer_hp
-        self.f_div = f_div[hp.model.tier]
+        self.f_div = f_div[hp.model.tier + 1]
         self.t_div = t_div[hp.model.tier]
         self.n_mels = hp.audio.n_mels
 
         self.tierutil = TierUtil(hp)
 
         if infer_hp.conditional:
-            self.tiers = nn.ModuleList(
-                [None] + [TTS(
+            self.tiers = [TTS(
                     hp=hp,
                     freq=hp.audio.n_mels // self.f_div * f_div[1],
                     layers=hp.model.layers[0]
@@ -38,16 +37,16 @@ class MelNet(nn.Module):
                     layers=hp.model.layers[tier - 1],
                     tierN=tier
                 ) for tier in range(2, hp.model.tier + 1)]
-            )
         else:
-            self.tiers = nn.ModuleList(
-                [None] + [Tier(
+            self.tiers = [Tier(
                     hp=hp,
                     freq=hp.audio.n_mels // self.f_div * f_div[tier],
                     layers=hp.model.layers[tier-1],
                     tierN=tier
                 ) for tier in range(1, hp.model.tier + 1)]
-            )
+        self.tiers = nn.ModuleList(
+            [None] + [nn.DataParallel(tier).cuda() for tier in self.tiers]
+        )
 
     def forward(self, x, tier_num):
         assert tier_num > 0, 'tier_num should be larger than 0, got %d' % tier_num
@@ -55,28 +54,28 @@ class MelNet(nn.Module):
         return self.tiers[tier_num](x)
 
     def sample(self, condition):
-        x = torch.zeros(1, self.n_mels//self.f_div, self.args.timestep//self.t_div).cuda()
-        seq = torch.from_numpy(text_to_sequence(condition)).long()
-        input_lengths = torch.LongTensor([[seq[0].shape[0]]]).cuda()
+        x = torch.zeros(1, self.n_mels // self.f_div, self.args.timestep // self.t_div).cuda()
+        seq = torch.from_numpy(text_to_sequence(condition)).long().unsqueeze(0)
+        input_lengths = torch.LongTensor([seq[0].shape[0]]).cuda()
 
         ## Tier 1 ##
-        print('Tier 1')
-        for t in tqdm(range(x.size(1))):
-            for m in tqdm(range(x.size(2))):
+        tqdm.write('Tier 1')
+        for t in tqdm(range(x.size(2))):
+            for m in tqdm(range(x.size(1))):
                 torch.cuda.synchronize()
-                if infer_hp.conditional:
+                if self.infer_hp.conditional:
                     mu, std, pi, _ = self.tiers[1](x, seq, input_lengths)
                 else:
                     mu, std, pi = self.tiers[1](x)
                 temp = sample_gmm(mu, std, pi)
-                x[:, t, m] = temp[:, t, m]
+                x[:, m, t] = temp[:, m, t]
 
         ## Tier 2~N ##
-        for tier in tqdm(range(2, self.hp.model.tier+1)):
-            print('Tier %d' % tier)
+        for tier in tqdm(range(2, self.hp.model.tier + 1)):
+            tqdm.write('Tier %d' % tier)
             mu, std, pi = self.tiers[tier](x)
             temp = sample_gmm(mu, std, pi)
-            x = self.tierutil.interleave(x, temp, tier+1)
+            x = self.tierutil.interleave(x, temp, tier + 1)
 
         return x
 

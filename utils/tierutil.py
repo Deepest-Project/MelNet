@@ -42,7 +42,7 @@ class TierUtil():
         if tierNo == 1:
             return tiers[-1], tiers[-1].copy()
         else:
-            return tiers[-2], tiers[-1]
+            return tiers[-1], tiers[-2]
 
     def interleave(self, x, y, tier):
         '''
@@ -54,14 +54,14 @@ class TierUtil():
         assert x.size() == y.size(), \
             'two inputs for interleave should be identical: got %s, %s' % (x.size(), y.size())
 
-        B, T, M = x.size()
-        if tier % 2 == 0: # along time axis
-            temp = x.new_zeros(B, 2 * T, M)
-            temp[:, 0::2, :] = x
-            temp[:, 1::2, :] = y
-        else:
-            temp = x.new_zeros(B, T, 2 * M)
+        B, M, T = x.size()
+        if tier % 2 == 0:
+            temp = x.new_zeros(B, M, 2 * T)
             temp[:, :, 0::2] = x
             temp[:, :, 1::2] = y
+        else:
+            temp = x.new_zeros(B, 2 * M, T)
+            temp[:, 0::2, :] = x
+            temp[:, 1::2, :] = y
 
         return temp

@@ -3,6 +3,9 @@ import glob
 import argparse
 import torch
 
+import matplotlib.pyplot as plt
+from utils.plotting import plot_spectrogram_to_numpy
+
 from utils.constant import t_div
 from utils.hparams import HParam
 from model.model import MelNet
@@ -16,6 +19,8 @@ if __name__ == '__main__':
                         help="yaml file for inference configuration")
     parser.add_argument('-t', '--timestep', type=int, default=240,
                         help="timestep of mel-spectrogram to generate")
+    parser.add_argument('-n', '--name', type=str, default="result", required=False,
+                        help="Name for sample")
     parser.add_argument('-i', '--input', type=str, default=None, required=False,
                         help="Input for conditional generation, leave empty for unconditional")
     args = parser.parse_args()
@@ -34,5 +39,6 @@ if __name__ == '__main__':
         x = model.sample(args.input)
 
     os.makedirs('temp', exist_ok=True)
-    torch.save(x, os.path.join('temp', 'result.pt'))
-
+    torch.save(x, os.path.join('temp', args.name + '.pt'))
+    x = plot_spectrogram_to_numpy(x[0].cpu().detach().numpy())
+    plt.imsave(os.path.join('temp', args.name + '.png'), x.transpose((1, 2, 0)))
