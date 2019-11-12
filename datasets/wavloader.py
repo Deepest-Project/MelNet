@@ -84,11 +84,10 @@ class AudioTextDataset(Dataset):
         with open(os.path.join(self.root_dir, 'transcript.v.1.3.txt'), 'r') as f:
             lines = f.read().splitlines()
             for line in lines:
-                wav_name, _, _, text, _, _ = line.split('|')
+                wav_name, _, _, text, length, _ = line.split('|')
                 
                 wav_path = os.path.join(self.root_dir, 'kss', wav_name)
-                wav = read_wav_np(wav_path, sample_rate=self.hp.audio.sr)
-                duraton = (len(wav)/hp.audio.sr)
+                duraton = float(length)
                 if duraton < hp.audio.duration:
                     self.dataset.append((wav_path, text))
                 

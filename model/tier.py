@@ -34,12 +34,12 @@ class Tier(nn.Module):
         # map output to produce GMM parameter eq. (10)
         self.W_theta = nn.Linear(num_hidden, 3*self.K)
 
-    def forward(self, x, train=True):
+    def forward(self, x):
         # x: [B, M, T] / B=batch, M=mel, T=time
         if self.tierN == 1:
-            h_t = self.W_t_0(F.pad(x, [1, -1] if train else [0, 0]).unsqueeze(-1))
-            h_f = self.W_f_0(F.pad(x, [0, 0, 1, -1] if train else [0, 0]).unsqueeze(-1))
-            h_c = self.W_c_0(F.pad(x, [1, -1] if train else [0, 0]).transpose(1, 2))
+            h_t = self.W_t_0(F.pad(x, [1, -1]).unsqueeze(-1))
+            h_f = self.W_f_0(F.pad(x, [0, 0, 1, -1]).unsqueeze(-1))
+            h_c = self.W_c_0(F.pad(x, [1, -1]).transpose(1, 2))
             for layer in self.layers:
                 h_t, h_f, h_c = layer(h_t, h_f, h_c)
 
@@ -57,7 +57,3 @@ class Tier(nn.Module):
         pi = theta_hat[..., 2*self.K:]
 
         return mu, std, pi
-
-    def sample(self, x):
-        mu, std, pi = self.forward(x, train=False)
-        return sample_gmm(mu, std, pi)

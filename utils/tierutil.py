@@ -56,11 +56,11 @@ class TierUtil():
 
         B, T, M = x.size()
         if tier % 2 == 0: # along time axis
-            temp = torch.zeros((B, 2*T, M)).to(x.device)
+            temp = x.new_zeros(B, 2 * T, M)
             temp[:, 0::2, :] = x
             temp[:, 1::2, :] = y
         else:
-            temp = torch.zeros((B, T, 2*M)).to(x.device)
+            temp = x.new_zeros(B, T, 2 * M)
             temp[:, :, 0::2] = x
             temp[:, :, 1::2] = y
 

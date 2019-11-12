@@ -15,9 +15,7 @@ class MelGen():
             n_fft=self.hp.audio.win_length,
             hop_length=self.hp.audio.hop_length,
             win_length=self.hp.audio.win_length,
-            n_mels=self.hp.audio.n_mels,
-            fmin=self.hp.audio.mel_fmin,
-            fmax=self.hp.audio.mel_fmax,
+            n_mels=self.hp.audio.n_mels
         )
         x = self.pre_spec(x)
         return x

@@ -1,11 +1,14 @@
-import tqdm
 import torch
 import torch.nn as nn
 import torch.nn.functional as F
-from collections import OrderedDict
+
+from tqdm.autonotebook import tqdm
 
 from .tier import Tier
+from .tts import TTS
 from .loss import GMMLoss
+from text import text_to_sequence
+from utils.gmm import sample_gmm
 from utils.constant import f_div, t_div
 from utils.hparams import load_hparam_str
 from utils.tierutil import TierUtil
@@ -23,36 +26,57 @@ class MelNet(nn.Module):
 
         self.tierutil = TierUtil(hp)
 
-        self.tiers = nn.ModuleList([None] +
-            [Tier(hp=hp,
-                freq=hp.audio.n_mels // self.f_div * f_div[tier],
-                layers=hp.model.layers[tier-1],
-                tierN=tier)
-            for tier in range(1, hp.model.tier+1)])
+        if infer_hp.conditional:
+            self.tiers = nn.ModuleList(
+                [None] + [TTS(
+                    hp=hp,
+                    freq=hp.audio.n_mels // self.f_div * f_div[1],
+                    layers=hp.model.layers[0]
+                )] + [Tier(
+                    hp=hp,
+                    freq=hp.audio.n_mels // self.f_div * f_div[tier],
+                    layers=hp.model.layers[tier - 1],
+                    tierN=tier
+                ) for tier in range(2, hp.model.tier + 1)]
+            )
+        else:
+            self.tiers = nn.ModuleList(
+                [None] + [Tier(
+                    hp=hp,
+                    freq=hp.audio.n_mels // self.f_div * f_div[tier],
+                    layers=hp.model.layers[tier-1],
+                    tierN=tier
+                ) for tier in range(1, hp.model.tier + 1)]
+            )
 
     def forward(self, x, tier_num):
         assert tier_num > 0, 'tier_num should be larger than 0, got %d' % tier_num
 
         return self.tiers[tier_num](x)
 
-    def unconditional_sample(self):
+    def sample(self, condition):
         x = torch.zeros(1, self.n_mels//self.f_div, self.args.timestep//self.t_div).cuda()
+        seq = torch.from_numpy(text_to_sequence(condition)).long()
+        input_lengths = torch.LongTensor([[seq[0].shape[0]]]).cuda()
 
         ## Tier 1 ##
         print('Tier 1')
-        for t in tqdm.tqdm(range(x.size(1))):
-            for m in range(x.size(2)):
+        for t in tqdm(range(x.size(1))):
+            for m in tqdm(range(x.size(2))):
                 torch.cuda.synchronize()
-                temp = self.tiers[1].sample(x)
+                if infer_hp.conditional:
+                    mu, std, pi, _ = self.tiers[1](x, seq, input_lengths)
+                else:
+                    mu, std, pi = self.tiers[1](x)
+                temp = sample_gmm(mu, std, pi)
                 x[:, t, m] = temp[:, t, m]
-                del temp
 
         ## Tier 2~N ##
-        for tier in range(2, self.hp.model.tier+1):
+        for tier in tqdm(range(2, self.hp.model.tier+1)):
             print('Tier %d' % tier)
-            temp = self.tiers[tier].sample(x)
+            mu, std, pi = self.tiers[tier](x)
+            temp = sample_gmm(mu, std, pi)
             x = self.tierutil.interleave(x, temp, tier+1)
-            del temp
 
         return x
 
@@ -64,8 +88,4 @@ class MelNet(nn.Module):
             if self.hp != hp:
                 print('Warning: hp different in file %s' % chkpt_path)
             
-            checkpoint['model'] = OrderedDict({name[7:]: value for name, value in checkpoint['model'].items()})
             self.tiers[idx+1].load_state_dict(checkpoint['model'])
-
-            del checkpoint
-

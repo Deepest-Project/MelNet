@@ -16,6 +16,8 @@ if __name__ == '__main__':
                         help="yaml file for inference configuration")
     parser.add_argument('-t', '--timestep', type=int, default=240,
                         help="timestep of mel-spectrogram to generate")
+    parser.add_argument('-i', '--input', type=str, default=None, required=False,
+                        help="Input for conditional generation, leave empty for unconditional")
     args = parser.parse_args()
 
     hp = HParam(args.config)
@@ -29,10 +31,8 @@ if __name__ == '__main__':
     model.eval()
 
     with torch.no_grad():
-        x = model.unconditional_sample()
+        x = model.sample(args.input)
 
-    print(x)
-    print(x.shape)
     os.makedirs('temp', exist_ok=True)
     torch.save(x, os.path.join('temp', 'result.pt'))
 
