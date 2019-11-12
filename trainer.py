@@ -22,6 +22,8 @@ if __name__ == '__main__':
                         help="Number of tier to train")
     parser.add_argument('-b', '--batch_size', type=int, required=True,
                         help="Batch size")
+    parser.add_argument('-s', '--tts', type=bool, default=False, required=False,
+                        help="TTS")
     args = parser.parse_args()
 
     hp = HParam(args.config)

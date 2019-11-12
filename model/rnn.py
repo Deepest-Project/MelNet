@@ -31,7 +31,7 @@ class DelayedRNN(nn.Module):
         self.c_RNN.flatten_parameters()
         self.f_delay_RNN.flatten_parameters()
 
-    def forward(self, input_h_t, input_h_f, input_h_c=0.0, attention=False):
+    def forward(self, input_h_t, input_h_f, input_h_c):
       
         self.flatten_rnn()
         # input_h_t, input_h_f: [B, M, T, D]
@@ -45,9 +45,9 @@ class DelayedRNN(nn.Module):
 
         # Fig. 2(a)-2,3 can be parallelized by viewing each vertical line as batch,
         # using bi-directional version of GRU
-        temp = input_h_t.transpose(1, 2).contiguous() # [B, T, M, D]
-        temp = temp.view(-1, M, D)
-        h_t_yz, _ = self.t_delay_RNN_yz(temp)
+        h_t_yz_temp = input_h_t.transpose(1, 2).contiguous() # [B, T, M, D]
+        h_t_yz_temp = h_t_yz_temp.view(-1, M, D)
+        h_t_yz, _ = self.t_delay_RNN_yz(h_t_yz_temp)
         h_t_yz = h_t_yz.view(B, T, M, 2*D)
         h_t_yz = h_t_yz.transpose(1, 2)
 
@@ -55,10 +55,7 @@ class DelayedRNN(nn.Module):
         output_h_t = input_h_t + self.W_t(h_t_concat) # residual connection, eq. (6)
 
         ####### centralized stack #######
-        if attention==False:
-            h_c_temp, _ = self.c_RNN(input_h_c)
-        else:
-            h_c_temp = input_h_c
+        h_c_temp, _ = self.c_RNN(input_h_c)
             
         output_h_c = input_h_c + self.W_c(h_c_temp) # residual connection, eq. (11)
         h_c_expanded = output_h_c.unsqueeze(1)
@@ -71,6 +68,7 @@ class DelayedRNN(nn.Module):
         h_f_temp, _ = self.f_delay_RNN(h_f_sum)
         h_f_temp = h_f_temp.view(B, T, M, D)
         h_f_temp = h_f_temp.transpose(1, 2) # [B, M, T, D]
+        
         output_h_f = input_h_f + self.W_f(h_f_temp) # residual connection, eq. (8)
 
         return output_h_t, output_h_f, output_h_c
