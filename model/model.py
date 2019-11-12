@@ -1,18 +1,27 @@
+import tqdm
 import torch
 import torch.nn as nn
 import torch.nn.functional as F
+from collections import OrderedDict
 
 from .tier import Tier
 from .loss import GMMLoss
 from utils.constant import f_div, t_div
+from utils.hparams import load_hparam_str
+from utils.tierutil import TierUtil
 
 
 class MelNet(nn.Module):
-    def __init__(self, hp):
+    def __init__(self, hp, args, infer_hp):
         super(MelNet, self).__init__()
         self.hp = hp
+        self.args = args
+        self.infer_hp = infer_hp
         self.f_div = f_div[hp.model.tier]
         self.t_div = t_div[hp.model.tier]
+        self.n_mels = hp.audio.n_mels
+
+        self.tierutil = TierUtil(hp)
 
         self.tiers = nn.ModuleList([None] +
             [Tier(hp=hp,
@@ -26,5 +35,37 @@ class MelNet(nn.Module):
 
         return self.tiers[tier_num](x)
 
-    def sample(self):
-        raise NotImplementedError
+    def unconditional_sample(self):
+        x = torch.zeros(1, self.n_mels//self.f_div, self.args.timestep//self.t_div).cuda()
+
+        ## Tier 1 ##
+        print('Tier 1')
+        for t in tqdm.tqdm(range(x.size(1))):
+            for m in range(x.size(2)):
+                torch.cuda.synchronize()
+                temp = self.tiers[1].sample(x)
+                x[:, t, m] = temp[:, t, m]
+                del temp
+
+        ## Tier 2~N ##
+        for tier in range(2, self.hp.model.tier+1):
+            print('Tier %d' % tier)
+            temp = self.tiers[tier].sample(x)
+            x = self.tierutil.interleave(x, temp, tier+1)
+            del temp
+
+        return x
+
+    def load_tiers(self):
+        for idx, chkpt_path in enumerate(self.infer_hp.checkpoints):
+            checkpoint = torch.load(chkpt_path)
+            hp = load_hparam_str(checkpoint['hp_str'])
+
+            if self.hp != hp:
+                print('Warning: hp different in file %s' % chkpt_path)
+            
+            checkpoint['model'] = OrderedDict({name[7:]: value for name, value in checkpoint['model'].items()})
+            self.tiers[idx+1].load_state_dict(checkpoint['model'])
+
+            del checkpoint
+

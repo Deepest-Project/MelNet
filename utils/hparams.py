@@ -8,7 +8,9 @@ def load_hparam_str(hp_str):
     path = os.path.join('temp-restore.yaml')
     with open(path, 'w') as f:
         f.write(hp_str)
-    return HParam(path)
+    ret = HParam(path)
+    os.remove(path)
+    return ret
 
 
 def load_hparam(filename):

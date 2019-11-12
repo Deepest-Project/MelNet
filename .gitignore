@@ -4,6 +4,7 @@
 config/*
 !config/voxceleb2.yaml
 !config/unblizzard.yaml
+!config/inference.yaml
 !config/kss.yaml
 
 # logs, checkpoints
