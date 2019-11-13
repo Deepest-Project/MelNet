@@ -12,7 +12,6 @@ from utils.constant import t_div
 from utils.hparams import HParam
 from model.model import MelNet
 
-
 if __name__ == '__main__':
     parser = argparse.ArgumentParser()
     parser.add_argument('-c', '--config', type=str, required=True,
@@ -45,9 +44,13 @@ if __name__ == '__main__':
     spectrogram = plot_spectrogram_to_numpy(generated[0].cpu().detach().numpy())
     plt.imsave(os.path.join('temp', args.name + '.png'), spectrogram.transpose((1, 2, 0)))
 
-    waveform = Reconstruct(hp).inverse(generated[0]).unsqueeze(-1)
+    waveform, wavespec = Reconstruct(hp).inverse(generated[0])
+    wavespec = plot_spectrogram_to_numpy(wavespec.cpu().detach().numpy())
+    plt.imsave(os.path.join('temp', 'Final ' + args.name + '.png'), wavespec.transpose((1, 2, 0)))
+
+    waveform = waveform.unsqueeze(-1)
     waveform = waveform.cpu().detach().numpy()
-    waveform *= 32768
+    waveform *= 32768 / waveform.max()
     waveform = waveform.astype(np.int16)
     audio = audiosegment.from_numpy_array(
         waveform,

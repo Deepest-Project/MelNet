@@ -10,11 +10,10 @@ def get_commit_hash():
 def read_wav_np(wavpath, sample_rate):
     file_format = wavpath.split('.')[-1]
     audio = audiosegment.from_file(wavpath).resample(sample_rate_Hz=sample_rate)
-    data = audio.raw_data
-    wav = np.frombuffer(data, dtype=np.int16)
+    wav = audio.to_numpy_array()
     
     if len(wav.shape) == 2:
-        wav = wav[:, 0]
+        wav = wav.T.flatten()
     
     if wav.dtype == np.int16:
         wav = wav / 32768.0
