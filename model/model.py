@@ -2,7 +2,7 @@ import torch
 import torch.nn as nn
 import torch.nn.functional as F
 
-from tqdm.autonotebook import tqdm
+from tqdm import tqdm
 
 from .tier import Tier
 from .tts import TTS

@@ -2,7 +2,7 @@ import torch
 import librosa
 import numpy as np
 
-from tqdm.autonotebook import tqdm
+from tqdm import tqdm
 
 class Reconstruct():
     def __init__(self, hp):
