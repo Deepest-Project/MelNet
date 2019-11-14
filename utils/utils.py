@@ -5,7 +5,7 @@ import audiosegment
 
 PAD = '_'
 EOS = '~'
-PUNC = '!\'(),-.:;?'
+PUNC = '!\'(),-.:;?`'
 SPACE = ' '
 SYMBOLS = 'ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz'
 en_symbols = SYMBOLS + PAD + EOS + PUNC + SPACE

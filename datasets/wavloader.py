@@ -3,6 +3,7 @@ import glob
 import torch
 import random
 import numpy as np
+from tqdm import tqdm
 from torch.utils.data import Dataset, DataLoader
 
 from utils.utils import read_wav_np, cut_wav, get_length, process_blizzard
@@ -87,7 +88,7 @@ class AudioTextDataset(Dataset):
         if hp.data.name == 'KSS':
             with open(os.path.join(self.root_dir, 'transcript.v.1.3.txt'), 'r') as f:
                 lines = f.read().splitlines()
-                for line in lines:
+                for line in tqdm(lines):
                     wav_name, _, _, text, length, _ = line.split('|')
 
                     wav_path = os.path.join(self.root_dir, 'kss', wav_name)
@@ -101,7 +102,7 @@ class AudioTextDataset(Dataset):
                 lines = f.read().splitlines()
                 filenames = lines[::3]
                 sentences = lines[1::3]
-                for filename, sentence in zip(filenames, sentences):
+                for filename, sentence in tqdm(zip(filenames, sentences), total=len(filenames)):
                     wav_path = os.path.join(self.root_dir, 'wavn', filename + '.wav')
                     length = get_length(wav_path, hp.audio.sr)
                     if length < hp.audio.duration:
