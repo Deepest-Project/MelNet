@@ -54,14 +54,18 @@ class MelNet(nn.Module):
         return self.tiers[tier_num](x)
 
     def sample(self, condition):
-        x = torch.zeros(1, self.n_mels // self.f_div, self.args.timestep // self.t_div).cuda()
+        x = None
         seq = torch.from_numpy(text_to_sequence(condition)).long().unsqueeze(0)
         input_lengths = torch.LongTensor([seq[0].shape[0]]).cuda()
 
         ## Tier 1 ##
         tqdm.write('Tier 1')
-        for t in tqdm(range(x.size(2))):
-            for m in tqdm(range(x.size(1))):
+        for t in tqdm(range(self.args.timestep // self.t_div)):
+            if x is None:
+                x = torch.zeros((1, self.n_mels // self.f_div, 1)).cuda()
+            else:
+                x = torch.cat([x, torch.zeros((1, self.n_mels // self.f_div, 1)).cuda()], dim=-1)
+            for m in tqdm(range(self.n_mels // self.f_div)):
                 torch.cuda.synchronize()
                 if self.infer_hp.conditional:
                     mu, std, pi, _ = self.tiers[1](x, seq, input_lengths)
