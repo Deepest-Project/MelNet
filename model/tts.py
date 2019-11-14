@@ -5,7 +5,7 @@ import numpy as np
 
 from .rnn import DelayedRNN
 from text import symbols
-from utils import en_symbols
+from utils.utils import en_symbols
 
 class Attention(nn.Module):
     def __init__(self, hp):
