@@ -3,7 +3,7 @@
 # configuration
 config/*
 !config/voxceleb2.yaml
-!config/unblizzard.yaml
+!config/blizzard.yaml
 !config/inference.yaml
 !config/kss.yaml
 

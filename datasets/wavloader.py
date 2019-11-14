@@ -5,7 +5,7 @@ import random
 import numpy as np
 from torch.utils.data import Dataset, DataLoader
 
-from utils.utils import read_wav_np, cut_wav
+from utils.utils import read_wav_np, cut_wav, get_length, process_blizzard
 from utils.audio import MelGen
 from utils.tierutil import TierUtil
 from text import text_to_sequence
@@ -13,23 +13,25 @@ from text import text_to_sequence
 def create_dataloader(hp, args, train):
     if args.tts:
         dataset = AudioTextDataset(hp, args, train)
-        return DataLoader(dataset=dataset,
-                    batch_size=args.batch_size,
-                    shuffle=train,
-                    num_workers=hp.train.num_workers,
-                    pin_memory=True,
-                    drop_last=True,
-                    collate_fn=TextCollate())
+        return DataLoader(
+            dataset=dataset,
+            batch_size=args.batch_size,
+            shuffle=train,
+            num_workers=hp.train.num_workers,
+            pin_memory=True,
+            drop_last=True,
+            collate_fn=TextCollate()
+        )
     else:
         dataset = AudioOnlyDataset(hp, args, train)
-        return DataLoader(dataset=dataset,
-                    batch_size=args.batch_size,
-                    shuffle=train,
-                    num_workers=hp.train.num_workers,
-                    pin_memory=True,
-                    drop_last=True)
-
-    
+        return DataLoader(
+            dataset=dataset,
+            batch_size=args.batch_size,
+            shuffle=train,
+            num_workers=hp.train.num_workers,
+            pin_memory=True,
+            drop_last=True
+        )
 
 class AudioOnlyDataset(Dataset):
     def __init__(self, hp, args, train):
@@ -41,8 +43,11 @@ class AudioOnlyDataset(Dataset):
         self.tierutil = TierUtil(hp)
 
         # this will search all files within hp.data.path
-        self.file_list = glob.glob(os.path.join(hp.data.path, '**', hp.data.extension), recursive=True)
-        
+        self.file_list = glob.glob(
+            os.path.join(hp.data.path, '**', hp.data.extension),
+            recursive=True
+        )
+
         random.seed(123)
         random.shuffle(self.file_list)
         if train:
@@ -67,8 +72,6 @@ class AudioOnlyDataset(Dataset):
 
         return source, target
 
-
-
 class AudioTextDataset(Dataset):
     def __init__(self, hp, args, train):
         self.hp = hp
@@ -81,20 +84,31 @@ class AudioTextDataset(Dataset):
         # this will search all files within hp.data.path
         self.root_dir = hp.data.path
         self.dataset = []
-        with open(os.path.join(self.root_dir, 'transcript.v.1.3.txt'), 'r') as f:
-            lines = f.read().splitlines()
-            for line in lines:
-                wav_name, _, _, text, length, _ = line.split('|')
-                
-                wav_path = os.path.join(self.root_dir, 'kss', wav_name)
-                duraton = float(length)
-                if duraton < hp.audio.duration:
-                    self.dataset.append((wav_path, text))
-                
-                # if len(self.dataset) > 100: break
+        if hp.data.name == 'KSS':
+            with open(os.path.join(self.root_dir, 'transcript.v.1.3.txt'), 'r') as f:
+                lines = f.read().splitlines()
+                for line in lines:
+                    wav_name, _, _, text, length, _ = line.split('|')
 
-        
-        random.seed(123)
+                    wav_path = os.path.join(self.root_dir, 'kss', wav_name)
+                    duraton = float(length)
+                    if duraton < hp.audio.duration:
+                        self.dataset.append((wav_path, text))
+
+                # if len(self.dataset) > 100: break
+        elif hp.data.name == 'Blizzard':
+            with open(os.path.join(self.root_dir, 'prompts.gui'), 'r') as f:
+                lines = f.read().splitlines()
+                filenames = lines[::3]
+                sentences = lines[1::3]
+                for filename, sentence in zip(filenames, sentences):
+                    wav_path = os.path.join(self.root_dir, 'wavn', filename + '.wav')
+                    length = get_length(wav_path, hp.audio.sr)
+                    if length < hp.audio.duration:
+                        self.dataset.append((wav_path, sentence))
+        else:
+            raise NotImplementedError
+
         random.shuffle(self.dataset)
         if train:
             self.dataset = self.dataset[:int(0.95 * len(self.dataset))]
@@ -112,8 +126,11 @@ class AudioTextDataset(Dataset):
 
     def __getitem__(self, idx):
         text = self.dataset[idx][1]
-        seq = text_to_sequence(text)
-        
+        if self.hp.data.name == 'KSS':
+            seq = text_to_sequence(text)
+        elif self.hp.data.name == 'Blizzard':
+            seq = process_blizzard(text)
+
         wav = read_wav_np(self.dataset[idx][0], sample_rate=self.hp.audio.sr)
         wav = cut_wav(self.wavlen, wav)
         mel = self.melgen.get_normalized_mel(wav)
@@ -133,10 +150,5 @@ class TextCollate():
         seq_padded = torch.nn.utils.rnn.pad_sequence(seq, batch_first=True)
         source_padded = torch.stack([torch.from_numpy(x[1]) for x in batch])
         target_padded = torch.stack([torch.from_numpy(x[2]) for x in batch])
-        
+
         return seq_padded, input_lengths, source_padded, target_padded
-
-
-
-
-

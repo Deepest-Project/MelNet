@@ -3,12 +3,28 @@ import numpy as np
 import subprocess
 import audiosegment
 
+PAD = '_'
+EOS = '~'
+PUNC = '!\'(),-.:;?'
+SPACE = ' '
+SYMBOLS = 'ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz'
+en_symbols = SYMBOLS + PAD + EOS + PUNC + SPACE
+_symbol_to_id = {s: i for i, s in enumerate(en_symbols)}
+
+def get_length(wavpath, sample_rate):
+    audio = audiosegment.from_file(wavpath).resample(sample_rate_Hz=sample_rate)
+    return audio.duration_seconds
+
+def process_blizzard(text: str):
+    text = text.replace('@ ', '').replace('# ', '').replace('| ', '')
+    seq = [_symbol_to_id[c] for c in text]
+    return np.array(seq, dtype=np.int32)
+
 def get_commit_hash():
     message = subprocess.check_output(["git", "rev-parse", "--short", "HEAD"])
     return message.strip().decode('utf-8')
 
 def read_wav_np(wavpath, sample_rate):
-    file_format = wavpath.split('.')[-1]
     audio = audiosegment.from_file(wavpath).resample(sample_rate_Hz=sample_rate)
     wav = audio.to_numpy_array()
     
