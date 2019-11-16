@@ -17,7 +17,7 @@ def validate(args, model, melgen, tierutil, testloader, criterion, writer, step)
         for input_tuple in loader:
             if args.tts:
                 seq, text_lengths, source, target, audio_lengths = input_tuple
-                mu, std, pi, _ = model(
+                mu, std, pi, alignment = model(
                     source.cuda(non_blocking=True),
                     seq.cuda(non_blocking=True),
                     text_lengths.cuda(non_blocking=True),
