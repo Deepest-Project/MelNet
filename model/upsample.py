@@ -20,12 +20,24 @@ class UpsampleRNN(nn.Module):
         self.rnn_x.flatten_parameters()
         self.rnn_y.flatten_parameters()
 
-    def forward(self, inp):
+    def forward(self, inp, audio_lengths):
         self.flatten_parameters()
         
         B, M, T, D = inp.size()
 
-        x, _ = self.rnn_x(inp.view(-1, T, D))
+        inp_temp = inp.view(-1, T, D)
+        inp_temp = nn.utils.rnn.pack_padded_sequence(
+            inp_temp,
+            audio_lengths.unsqueeze(1).repeat(1, M).reshape(-1),
+            batch_first=True,
+            enforce_sorted=False
+        )
+        x, _ = self.rnn_x(inp_temp)
+        x, _ = nn.utils.rnn.pad_packed_sequence(
+            x,
+            batch_first=True,
+            total_length=T
+        )
         x = x.view(B, M, T, 2 * D)
 
         y, _ = self.rnn_y(inp.transpose(1, 2).contiguous().view(-1, M, D))

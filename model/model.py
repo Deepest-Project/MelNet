@@ -57,10 +57,12 @@ class MelNet(nn.Module):
         x = None
         seq = torch.from_numpy(text_to_sequence(condition)).long().unsqueeze(0)
         input_lengths = torch.LongTensor([seq[0].shape[0]]).cuda()
+        audio_lengths = torch.LongTensor([0]).cuda()
 
         ## Tier 1 ##
         tqdm.write('Tier 1')
         for t in tqdm(range(self.args.timestep // self.t_div)):
+            audio_lengths += 1
             if x is None:
                 x = torch.zeros((1, self.n_mels // self.f_div, 1)).cuda()
             else:
@@ -68,10 +70,10 @@ class MelNet(nn.Module):
             for m in tqdm(range(self.n_mels // self.f_div)):
                 torch.cuda.synchronize()
                 if self.infer_hp.conditional:
-                    mu, std, pi, _ = self.tiers[1](x, seq, input_lengths)
+                    mu, std, pi, _ = self.tiers[1](x, seq, input_lengths, audio_lengths)
                 else:
-                    mu, std, pi = self.tiers[1](x)
-                temp = sample_gmm(mu, std, pi)
+                    mu, std, pi = self.tiers[1](x, audio_lengths)
+                temp = sample_gmm(mu, std, pi, audio_lengths)
                 x[:, m, t] = temp[:, m, t]
 
         ## Tier 2~N ##

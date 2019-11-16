@@ -54,7 +54,7 @@ class Attention(nn.Module):
 
     
     
-    def forward(self, input_h_c, memory, input_lengths):
+    def forward(self, input_h_c, memory):
         B, T, D = input_h_c.size()
         
         context = input_h_c.new_zeros(B, D)
@@ -72,9 +72,9 @@ class Attention(nn.Module):
             
         contexts = torch.cat(contexts, dim=1) + input_h_c
         alignment = torch.cat(weights, dim=1)
-        termination = torch.gather(termination, 1, (input_lengths-1).unsqueeze(-1)) # 4
+        # termination = torch.gather(termination, 1, (input_lengths-1).unsqueeze(-1)) # 4
 
-        return context, alignment, termination
+        return contexts, alignment#, termination
 
 
 
@@ -111,12 +111,12 @@ class TTS(nn.Module):
         
         self.attention = Attention(hp)
 
-    def text_encode(self, text, input_lengths):
+    def text_encode(self, text, text_lengths):
         total_length = text.size(1)
         embed = self.embedding_text(text)
         packed = nn.utils.rnn.pack_padded_sequence(
             embed,
-            input_lengths,
+            text_lengths,
             batch_first=True,
             enforce_sorted=False
         )
@@ -128,9 +128,9 @@ class TTS(nn.Module):
         )
         return unpacked
         
-    def forward(self, x, text, input_lengths):
+    def forward(self, x, text, text_lengths, audio_lengths):
         # Extract memory
-        memory = self.text_encode(text, input_lengths)
+        memory = self.text_encode(text, text_lengths)
         
         # x: [B, M, T] / B=batch, M=mel, T=time
         h_t = self.W_t_0(F.pad(x, [1, -1]).unsqueeze(-1))
@@ -140,16 +140,11 @@ class TTS(nn.Module):
         # h_t, h_f: [B, M, T, D] / h_c: [B, T, D]
         for i, layer in enumerate(self.layers):
             if i != (len(self.layers)//2):
-                h_t, h_f, h_c = layer(h_t, h_f, h_c)
+                h_t, h_f, h_c = layer(h_t, h_f, h_c, audio_lengths)
                 
             else:
-                h_c, alignment, termination = self.attention(
-                    h_c,
-                    memory,
-                    input_lengths
-                )
-                
-                h_t, h_f, h_c = layer(h_t, h_f, h_c)
+                h_c, alignment = self.attention(h_c, memory)
+                h_t, h_f, h_c = layer(h_t, h_f, h_c, audio_lengths)
 
         theta_hat = self.W_theta(h_f)
 

@@ -31,7 +31,7 @@ class DelayedRNN(nn.Module):
         self.c_RNN.flatten_parameters()
         self.f_delay_RNN.flatten_parameters()
 
-    def forward(self, input_h_t, input_h_f, input_h_c):
+    def forward(self, input_h_t, input_h_f, input_h_c, audio_lengths):
       
         self.flatten_rnn()
         # input_h_t, input_h_f: [B, M, T, D]
@@ -40,7 +40,19 @@ class DelayedRNN(nn.Module):
 
         ####### time-delayed stack #######
         # Fig. 2(a)-1 can be parallelized by viewing each horizontal line as batch
-        h_t_x, _ = self.t_delay_RNN_x(input_h_t.view(-1, T, D))
+        h_t_x_temp = input_h_t.view(-1, T, D)
+        h_t_x_packed = nn.utils.rnn.pack_padded_sequence(
+            h_t_x_temp,
+            audio_lengths.unsqueeze(1).repeat(1, M).reshape(-1),
+            batch_first=True,
+            enforce_sorted=False
+        )
+        h_t_x, _ = self.t_delay_RNN_x(h_t_x_packed)
+        h_t_x, _ = nn.utils.rnn.pad_packed_sequence(
+            h_t_x,
+            batch_first=True,
+            total_length=T
+        )
         h_t_x = h_t_x.view(B, M, T, D)
 
         # Fig. 2(a)-2,3 can be parallelized by viewing each vertical line as batch,
@@ -55,7 +67,18 @@ class DelayedRNN(nn.Module):
         output_h_t = input_h_t + self.W_t(h_t_concat) # residual connection, eq. (6)
 
         ####### centralized stack #######
-        h_c_temp, _ = self.c_RNN(input_h_c)
+        h_c_temp = nn.utils.rnn.pack_padded_sequence(
+            input_h_c,
+            audio_lengths,
+            batch_first=True,
+            enforce_sorted=False
+        )
+        h_c_temp, _ = self.c_RNN(h_c_temp)
+        h_c_temp, _ = nn.utils.rnn.pad_packed_sequence(
+            h_c_temp,
+            batch_first=True,
+            total_length=T
+        )
             
         output_h_c = input_h_c + self.W_c(h_c_temp) # residual connection, eq. (11)
         h_c_expanded = output_h_c.unsqueeze(1)

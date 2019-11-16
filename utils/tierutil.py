@@ -19,7 +19,7 @@ class TierUtil():
         # 10*16000 // 180 + 1 = 889 (tedlium3)        
 
     def cut_divide_tiers(self, x, tierNo):
-        x = x[:, :-(x.shape[-1] % self.t_div)]
+        x = x[:, :x.shape[-1] - x.shape[-1] % self.t_div]
         M, T = x.shape
         assert M % self.f_div == 0, \
             'freq(mel) dimension should be divisible by %d, got %d.' \

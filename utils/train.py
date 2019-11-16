@@ -90,14 +90,24 @@ def train(args, pt_dir, chkpt_path, trainloader, testloader, writer, logger, hp,
             loader = tqdm(trainloader, desc='Train data loader', dynamic_ncols=True)
             for input_tuple in loader:
                 if args.tts:
-                    seq, input_lengths, source, target = input_tuple
-                    mu, std, pi, _ = model(source.cuda(non_blocking=True),
-                                                    seq.cuda(non_blocking=True),
-                                                    input_lengths.cuda(non_blocking=True))
+                    seq, text_lengths, source, target, audio_lengths = input_tuple
+                    mu, std, pi, _ = model(
+                        source.cuda(non_blocking=True),
+                        seq.cuda(non_blocking=True),
+                        text_lengths.cuda(non_blocking=True),
+                        audio_lengths.cuda(non_blocking=True)
+                    )
                 else:
-                    source, target = input_tuple
-                    mu, std, pi = model(source.cuda(non_blocking=True))
-                loss = criterion(target.cuda(non_blocking=True), mu, std, pi)
+                    source, target, audio_lengths = input_tuple
+                    mu, std, pi = model(
+                        source.cuda(non_blocking=True),
+                        audio_lengths.cuda(non_blocking=True)
+                    )
+                loss = criterion(
+                    target.cuda(non_blocking=True),
+                    mu, std, pi,
+                    audio_lengths.cuda(non_blocking=True)
+                )
                 step += 1
                 (loss / hp.train.update_interval).backward()
                 loss_sum += loss.item() / hp.train.update_interval

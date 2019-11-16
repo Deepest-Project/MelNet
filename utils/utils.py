@@ -16,7 +16,7 @@ def get_length(wavpath, sample_rate):
     return audio.duration_seconds
 
 def process_blizzard(text: str):
-    text = text.replace('@ ', '').replace('# ', '').replace('| ', '')
+    text = text.replace('@ ', '').replace('# ', '').replace('| ', '') + EOS
     seq = [_symbol_to_id[c] for c in text]
     return np.array(seq, dtype=np.int32)
 

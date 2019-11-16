@@ -21,8 +21,8 @@ audio:
   min_level_db: -80.0
 ---
 train:
-  num_workers: 32
-  optimizer: 'SGD'
+  num_workers: 4
+  optimizer: 'adam'
   sgd:
     lr: 0.0001
     momentum: 0.9

@@ -31,7 +31,8 @@ def create_dataloader(hp, args, train):
             shuffle=train,
             num_workers=hp.train.num_workers,
             pin_memory=True,
-            drop_last=True
+            drop_last=True,
+            collate_fn=AudioCollate()
         )
 
 class AudioOnlyDataset(Dataset):
@@ -67,7 +68,7 @@ class AudioOnlyDataset(Dataset):
 
     def __getitem__(self, idx):
         wav = read_wav_np(self.file_list[idx], sample_rate=self.hp.audio.sr)
-        wav = cut_wav(self.wavlen, wav)
+        # wav = cut_wav(self.wavlen, wav)
         mel = self.melgen.get_normalized_mel(wav)
         source, target = self.tierutil.cut_divide_tiers(mel, self.tier)
 
@@ -110,6 +111,7 @@ class AudioTextDataset(Dataset):
         else:
             raise NotImplementedError
 
+        random.seed(123)
         random.shuffle(self.dataset)
         if train:
             self.dataset = self.dataset[:int(0.95 * len(self.dataset))]
@@ -133,7 +135,7 @@ class AudioTextDataset(Dataset):
             seq = process_blizzard(text)
 
         wav = read_wav_np(self.dataset[idx][0], sample_rate=self.hp.audio.sr)
-        wav = cut_wav(self.wavlen, wav)
+        # wav = cut_wav(self.wavlen, wav)
         mel = self.melgen.get_normalized_mel(wav)
         source, target = self.tierutil.cut_divide_tiers(mel, self.tier)
 
@@ -145,11 +147,35 @@ class TextCollate():
 
     def __call__(self, batch):
         seq = [torch.from_numpy(x[0]).long() for x in batch]
+        text_lengths = torch.LongTensor([x.shape[0] for x in seq])
         # Right zero-pad all one-hot text sequences to max input length
-        input_lengths = torch.LongTensor([x.shape[0] for x in seq])
-
         seq_padded = torch.nn.utils.rnn.pad_sequence(seq, batch_first=True)
-        source_padded = torch.stack([torch.from_numpy(x[1]) for x in batch])
-        target_padded = torch.stack([torch.from_numpy(x[2]) for x in batch])
 
-        return seq_padded, input_lengths, source_padded, target_padded
+        audio_lengths = torch.LongTensor([x[1].shape[1] for x in batch])
+        source_padded = torch.nn.utils.rnn.pad_sequence(
+            [torch.from_numpy(x[1].T) for x in batch],
+            batch_first=True
+        ).transpose(1, 2)
+        target_padded = torch.nn.utils.rnn.pad_sequence(
+            [torch.from_numpy(x[2].T) for x in batch],
+            batch_first=True
+        ).transpose(1, 2)
+
+        return seq_padded, text_lengths, source_padded, target_padded, audio_lengths
+
+class AudioCollate():
+    def __init__(self):
+        return
+
+    def __call__(self, batch):
+        audio_lengths = torch.LongTensor([x[0].shape[1] for x in batch])
+        source_padded = torch.nn.utils.rnn.pad_sequence(
+            [torch.from_numpy(x[0].T) for x in batch],
+            batch_first=True
+        ).transpose(1, 2)
+        target_padded = torch.nn.utils.rnn.pad_sequence(
+            [torch.from_numpy(x[1].T) for x in batch],
+            batch_first=True
+        ).transpose(1, 2)
+
+        return source_padded, target_padded, audio_lengths
