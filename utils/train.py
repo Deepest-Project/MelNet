@@ -81,7 +81,7 @@ def train(args, pt_dir, chkpt_path, trainloader, testloader, writer, logger, hp,
         logger.info("Starting new training run.")
 
     # use this only if input size is always consistent.
-    torch.backends.cudnn.benchmark = True
+    # torch.backends.cudnn.benchmark = True
     try:
         model.train()
         optimizer.zero_grad()

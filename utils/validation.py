@@ -9,7 +9,7 @@ from .gmm import sample_gmm
 
 def validate(args, model, melgen, tierutil, testloader, criterion, writer, step):
     model.eval()
-    torch.backends.cudnn.benchmark = False
+    # torch.backends.cudnn.benchmark = False
 
     test_loss = []
     loader = tqdm(testloader, desc='Testing is in progress', dynamic_ncols=True)
@@ -48,4 +48,4 @@ def validate(args, model, melgen, tierutil, testloader, criterion, writer, step)
         writer.log_validation(test_loss, source, target, result, alignment, step)
 
     model.train()
-    torch.backends.cudnn.benchmark = True
+    # torch.backends.cudnn.benchmark = True
