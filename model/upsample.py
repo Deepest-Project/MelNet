@@ -8,10 +8,16 @@ class UpsampleRNN(nn.Module):
         self.num_hidden = hp.model.hidden
 
         self.rnn_x = nn.LSTM(
-            input_size=self.num_hidden, hidden_size=self.num_hidden, batch_first=True, bidirectional=True
+            input_size=self.num_hidden,
+            hidden_size=self.num_hidden,
+            batch_first=True,
+            bidirectional=True
         )
         self.rnn_y = nn.LSTM(
-            input_size=self.num_hidden, hidden_size=self.num_hidden, batch_first=True, bidirectional=True
+            input_size=self.num_hidden,
+            hidden_size=self.num_hidden,
+            batch_first=True,
+            bidirectional=True
         )
 
         self.W = nn.Linear(4 * self.num_hidden, self.num_hidden)

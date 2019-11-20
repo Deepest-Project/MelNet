@@ -73,7 +73,7 @@ class MelNet(nn.Module):
                     mu, std, pi, _ = self.tiers[1](x, seq, input_lengths, audio_lengths)
                 else:
                     mu, std, pi = self.tiers[1](x, audio_lengths)
-                temp = sample_gmm(mu, std, pi, audio_lengths)
+                temp = sample_gmm(mu, std, pi)
                 x[:, m, t] = temp[:, m, t]
 
         ## Tier 2~N ##

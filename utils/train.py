@@ -86,7 +86,7 @@ def train(args, pt_dir, chkpt_path, trainloader, testloader, writer, logger, hp,
         model.train()
         optimizer.zero_grad()
         loss_sum = 0
-        for epoch in itertools.count(init_epoch+1):
+        for epoch in itertools.count(init_epoch + 1):
             loader = tqdm(trainloader, desc='Train data loader', dynamic_ncols=True)
             for input_tuple in loader:
                 if args.tts:
@@ -116,7 +116,7 @@ def train(args, pt_dir, chkpt_path, trainloader, testloader, writer, logger, hp,
                     optimizer.step()
                     optimizer.zero_grad()
                     if step % hp.log.summary_interval == 0:
-                        writer.log_training(loss_sum, mu, std, pi, step)
+                        writer.log_training(loss_sum, step)
                         loader.set_description("Loss %.04f at step %d" % (loss_sum, step))
                     loss_sum = 0
 

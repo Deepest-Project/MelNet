@@ -8,13 +8,13 @@ class MyWriter(SummaryWriter):
         super(MyWriter, self).__init__(logdir)
         self.hp = hp
 
-    def log_training(self, train_loss, mu, std, pi, step):
+    def log_training(self, train_loss, step):
         self.add_scalar('train_loss', train_loss, step)
-        self.add_histogram('mu', mu, step)
-        self.add_histogram('std', std, step)
-        self.add_histogram('std_exp', std.exp(), step)
-        self.add_histogram('pi', pi, step)
-        self.add_histogram('pi_softmax', pi.softmax(dim=3), step)
+        # self.add_histogram('mu', mu, step)
+        # self.add_histogram('std', std, step)
+        # self.add_histogram('std_exp', std.exp(), step)
+        # self.add_histogram('pi', pi, step)
+        # self.add_histogram('pi_softmax', pi.softmax(dim=3), step)
 
     def log_validation(self, test_loss, source, target, result, alignment, step):
         self.add_scalar('test_loss', test_loss, step)
