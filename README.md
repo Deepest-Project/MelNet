@@ -4,27 +4,48 @@ Implementation of [MelNet: A Generative Model for Audio in the Frequency Domain]
 
 ## Prerequisites
 
-- Tested with Python 3.6.8, PyTorch 1.2.0.
+- Tested with Python 3.6.8 & 3.7.4, PyTorch 1.2.0 & 1.3.0.
 - `pip install -r requirements.txt`
 
 ## How to train
 
-- Download train data: You may use either Blizzard(22,050Hz) or VoxCeleb2(16,000Hz) data. Both `m4a`, `wav` extension can be used. 
-  - For `wav` extension, you need to fix `datasets/wavloader.py#L38`. This hardcoded file extension will be fixed soon.
-- `python trainer.py -c config/voxceleb2.yaml -n [name of run] -t [tier number] -b [batch size]`
-  - You may need to adjust the batch size for each tier. For Tesla V100(32GB), b=4 for t=1, b=8 for t=2 was tested. 
-  - We found that only SGD optimizer with `lr=0.0001, momentum=0` works properly. Other optimizers like RMSProp or Adam have lead to severe unstability of loss. 
+### Datasets
 
-![](./assets/tensorboard.png)
+- Blizzard, VoxCeleb2, and KSS have YAML files provided under `config/`. For other datasets, fill out your own YAML file according to the other provided ones.
+- Unconditional training is possible for all kinds of datasets, provided that they have a consistent file extension specified by `data.extension` within the YAML file.
+- Conditional training is currently only implemented for KSS and a subset of the Blizzard dataset.
+
+### Running the code
+
+- `python trainer.py -c [config YAML file path] -n [name of run] -t [tier number] -b [batch size] -s [TTS]`
+  - Each tier can be trained separately. Since each tier is larger than the one before it (with the exception of tier 1), modify the batch size for each tier.
+    - Tier 6 of the Blizzard dataset does not fit on a 16GB P100, even with a batch size of 1.
+  - The `-s` flag is a boolean for determining whether to train a TTS tier. Since a TTS tier only differs at tier 1, this flag is ignored when `[tier number] != 0` . Warning: this flag is toggled `True` no matter what follows the flag. Ignore it if you're not planning to use it.
+
+## How to sample
+
+### Preparing the checkpoints
+
+- The checkpoints must be stored under `chkpt/`.
+- A YAML file named `inference.yaml` must be provided under `config/`.
+- `inference.yaml` must specify the number of tiers, the names of the checkpoints, and whether or not it is a conditional generation.
+
+### Running the code
+
+- `python inference.py -c [config YAML file path] -p [inference YAML file path] -t [timestep of generated mel spectrogram] -n [name of sample] -i [input sentence for conditional generation]`
+  - Timestep refers to the length of the mel spectrogram. The ratio of timestep to seconds is roughly `[sample rate] : [hop length of FFT]`.
+  - The `-i` flag is optional, only needed for conditional generation. Surround the sentence with `""` and end with `.`.
+  - Both unconditional generation and conditional generation currently does not support primed generation (extrapolating from provided data).
 
 ## To-do
 
 - [x] Implement upsampling procedure
 - [x] GMM sampling + loss function
-- [ ] Unconditional audio generation
-- [ ] TTS synthesis (PR [#3](<https://github.com/Deepest-Project/MelNet/pull/3>) is in review)
+- [x] Unconditional audio generation
+- [x] TTS synthesis 
 - [x] Tensorboard logging
-- [ ] Multi-GPU training
+- [x] Multi-GPU training
+- [ ] Primed generation
 
 ## Implementation authors
 
