@@ -1,11 +1,12 @@
 model:
   tier: 6
-  layers: [12, 5, 4, 3, 2, 2]
+  layers: [8, 5, 4, 3, 2, 2]
   hidden: 512
   gmm: 10
 ---
 data:
-  path: ''
+  name: 'Blizzard'
+  path: '../Datasets/Blizzard/Lessac_Blizzard2013_CatherineByers_train/train/segmented'
   extension: '*.wav'
 ---
 audio:
@@ -20,8 +21,8 @@ audio:
   min_level_db: -80.0
 ---
 train:
-  num_workers: 32
-  optimizer: 'SGD'
+  num_workers: 4
+  optimizer: 'adam'
   sgd:
     lr: 0.0001
     momentum: 0.9
@@ -33,7 +34,7 @@ train:
   # Gradient Accumulation
   # you'll be specifying batch size with argument of trainer.py
   # (update interval) * (batch size) = (paper's batch size) = 128
-  update_interval: 128 # for batch size 1.
+  update_interval: 32 # for batch size 1.
 ---
 log:
   summary_interval: 1

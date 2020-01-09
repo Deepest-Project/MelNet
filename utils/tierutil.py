@@ -1,3 +1,5 @@
+import torch
+
 from .constant import f_div, t_div
 
 
@@ -17,7 +19,7 @@ class TierUtil():
         # 10*16000 // 180 + 1 = 889 (tedlium3)        
 
     def cut_divide_tiers(self, x, tierNo):
-        x = x[:, :-(x.shape[-1] % self.t_div)]
+        x = x[:, :x.shape[-1] - x.shape[-1] % self.t_div]
         M, T = x.shape
         assert M % self.f_div == 0, \
             'freq(mel) dimension should be divisible by %d, got %d.' \
@@ -40,4 +42,26 @@ class TierUtil():
         if tierNo == 1:
             return tiers[-1], tiers[-1].copy()
         else:
-            return tiers[-2], tiers[-1]
+            return tiers[-1], tiers[-2]
+
+    def interleave(self, x, y, tier):
+        '''
+            implements eq. (25)
+            x: x^{<g}
+            y: x^{g}
+            tier: g+1
+        '''
+        assert x.size() == y.size(), \
+            'two inputs for interleave should be identical: got %s, %s' % (x.size(), y.size())
+
+        B, M, T = x.size()
+        if tier % 2 == 0:
+            temp = x.new_zeros(B, M, 2 * T)
+            temp[:, :, 0::2] = x
+            temp[:, :, 1::2] = y
+        else:
+            temp = x.new_zeros(B, 2 * M, T)
+            temp[:, 0::2, :] = x
+            temp[:, 1::2, :] = y
+
+        return temp

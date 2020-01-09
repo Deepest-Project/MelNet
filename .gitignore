@@ -3,7 +3,8 @@
 # configuration
 config/*
 !config/voxceleb2.yaml
-!config/unblizzard.yaml
+!config/blizzard.yaml
+!config/inference.yaml
 !config/kss.yaml
 
 # logs, checkpoints
@@ -126,3 +127,4 @@ VoxCeleb2/
 Blizzard/
 KSS/
 OpenVoice/
+TED-LIUM/

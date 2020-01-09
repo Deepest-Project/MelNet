@@ -1,0 +1,10 @@
+tier: 6
+checkpoints: [
+  '',
+  '',
+  '',
+  '',
+  '',
+  '',
+]
+conditional: True

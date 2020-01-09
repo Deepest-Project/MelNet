@@ -5,7 +5,8 @@ model:
   gmm: 10
 ---
 data:
-  path: 'KSS'
+  name: 'KSS'
+  path: ''
   extension: '*.wav'
 ---
 audio:

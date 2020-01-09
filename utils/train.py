@@ -81,23 +81,33 @@ def train(args, pt_dir, chkpt_path, trainloader, testloader, writer, logger, hp,
         logger.info("Starting new training run.")
 
     # use this only if input size is always consistent.
-    torch.backends.cudnn.benchmark = True
+    # torch.backends.cudnn.benchmark = True
     try:
         model.train()
         optimizer.zero_grad()
         loss_sum = 0
-        for epoch in itertools.count(init_epoch+1):
+        for epoch in itertools.count(init_epoch + 1):
             loader = tqdm(trainloader, desc='Train data loader', dynamic_ncols=True)
             for input_tuple in loader:
                 if args.tts:
-                    seq, input_lengths, source, target = input_tuple
-                    mu, std, pi, alignment = model(source.cuda(non_blocking=True),
-                                                    seq.cuda(non_blocking=True),
-                                                    input_lengths.cuda(non_blocking=True))
+                    seq, text_lengths, source, target, audio_lengths = input_tuple
+                    mu, std, pi, _ = model(
+                        source.cuda(non_blocking=True),
+                        seq.cuda(non_blocking=True),
+                        text_lengths.cuda(non_blocking=True),
+                        audio_lengths.cuda(non_blocking=True)
+                    )
                 else:
-                    source, target = input_tuple
-                    mu, std, pi = model(source.cuda(non_blocking=True))
-                loss = criterion(target.cuda(non_blocking=True), mu, std, pi)
+                    source, target, audio_lengths = input_tuple
+                    mu, std, pi = model(
+                        source.cuda(non_blocking=True),
+                        audio_lengths.cuda(non_blocking=True)
+                    )
+                loss = criterion(
+                    target.cuda(non_blocking=True),
+                    mu, std, pi,
+                    audio_lengths.cuda(non_blocking=True)
+                )
                 step += 1
                 (loss / hp.train.update_interval).backward()
                 loss_sum += loss.item() / hp.train.update_interval
@@ -106,7 +116,7 @@ def train(args, pt_dir, chkpt_path, trainloader, testloader, writer, logger, hp,
                     optimizer.step()
                     optimizer.zero_grad()
                     if step % hp.log.summary_interval == 0:
-                        writer.log_training(loss_sum, mu, std, pi, step)
+                        writer.log_training(loss_sum, step)
                         loader.set_description("Loss %.04f at step %d" % (loss_sum, step))
                     loss_sum = 0
 
@@ -116,7 +126,7 @@ def train(args, pt_dir, chkpt_path, trainloader, testloader, writer, logger, hp,
                     raise Exception("Loss exploded")
 
             save_path = os.path.join(pt_dir, '%s_%s_tier%d_%03d.pt'
-                % (args.name, githash, args.tier, epoch))
+            % (args.name, githash, args.tier, epoch))
             torch.save({
                 'model': model.state_dict(),
                 'optimizer': optimizer.state_dict(),

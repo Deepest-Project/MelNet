@@ -22,7 +22,7 @@ if __name__ == '__main__':
                         help="Number of tier to train")
     parser.add_argument('-b', '--batch_size', type=int, required=True,
                         help="Batch size")
-    parser.add_argument('-s', '--tts', type=bool, required=True,
+    parser.add_argument('-s', '--tts', type=bool, default=False, required=False,
                         help="TTS")
     args = parser.parse_args()
 
@@ -34,8 +34,14 @@ if __name__ == '__main__':
 
     pt_dir = os.path.join(hp.log.chkpt_dir, args.name)
     log_dir = os.path.join(hp.log.log_dir, args.name)
-    os.makedirs(pt_dir, exist_ok=True)
-    os.makedirs(log_dir, exist_ok=True)
+    if not os.path.isdir(hp.log.log_dir):
+        os.mkdir(hp.log.log_dir)
+    if not os.path.isdir(hp.log.chkpt_dir):
+        os.mkdir(hp.log.chkpt_dir)
+    if not os.path.isdir(pt_dir):
+        os.mkdir(pt_dir)
+    if not os.path.isdir(log_dir):
+        os.mkdir(log_dir)
 
     logging.basicConfig(
         level=logging.INFO,

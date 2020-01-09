@@ -2,6 +2,7 @@ import torch
 import torch.nn as nn
 import torch.nn.functional as F
 
+from utils.gmm import sample_gmm
 from .rnn import DelayedRNN
 from .upsample import UpsampleRNN
 
@@ -33,21 +34,21 @@ class Tier(nn.Module):
         # map output to produce GMM parameter eq. (10)
         self.W_theta = nn.Linear(num_hidden, 3*self.K)
 
-    def forward(self, x):
+    def forward(self, x, audio_lengths):
         # x: [B, M, T] / B=batch, M=mel, T=time
         if self.tierN == 1:
             h_t = self.W_t_0(F.pad(x, [1, -1]).unsqueeze(-1))
             h_f = self.W_f_0(F.pad(x, [0, 0, 1, -1]).unsqueeze(-1))
             h_c = self.W_c_0(F.pad(x, [1, -1]).transpose(1, 2))
             for layer in self.layers:
-                h_t, h_f, h_c = layer(h_t, h_f, h_c)
+                h_t, h_f, h_c = layer(h_t, h_f, h_c, audio_lengths)
 
             # h_t, h_f: [B, M, T, D] / D=num_hidden
             # h_c: [B, T, D]
         else:
             h_f = self.W_t(x.unsqueeze(-1))
             for layer in self.layers:
-                h_f = layer(h_f)
+                h_f = layer(h_f, audio_lengths)
 
         theta_hat = self.W_theta(h_f)
 
